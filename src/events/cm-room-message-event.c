@@ -210,7 +210,7 @@ cm_room_message_event_new_from_json (JsonObject *root)
   type = cm_utils_json_object_get_string (child, "msgtype");
   body = cm_utils_json_object_get_string (child, "body");
   self->body = g_strdup (body);
-  self->mxc_uri = g_strdup (cm_utils_json_object_get_string (child, "url"));
+  self->mxc_uri = cm_utils_json_object_dup_string (child, "url");
 
   if (g_strcmp0 (type, "m.text") == 0)
     self->type = CM_CONTENT_TYPE_TEXT;
