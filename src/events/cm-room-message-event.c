@@ -262,7 +262,14 @@ cm_room_message_event_set_body (CmRoomMessageEvent *self,
                                 const char         *text)
 {
   g_return_if_fail (CM_IS_ROOM_MESSAGE_EVENT (self));
-  g_return_if_fail (self->type == CM_CONTENT_TYPE_TEXT);
+  g_return_if_fail (self->type == CM_CONTENT_TYPE_TEXT ||
+                    self->type == CM_CONTENT_TYPE_EMOTE ||
+                    self->type == CM_CONTENT_TYPE_NOTICE ||
+                    self->type == CM_CONTENT_TYPE_LOCATION ||
+                    self->type == CM_CONTENT_TYPE_FILE ||
+                    self->type == CM_CONTENT_TYPE_IMAGE ||
+                    self->type == CM_CONTENT_TYPE_VIDEO ||
+                    self->type == CM_CONTENT_TYPE_AUDIO);
 
   g_free (self->body);
   self->body = g_strdup (text);
