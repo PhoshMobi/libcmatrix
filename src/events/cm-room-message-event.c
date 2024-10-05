@@ -30,7 +30,7 @@ struct _CmRoomMessageEvent
   char           *body;
   char           *file_path;    /* Local path to which file is saved */
   GFile          *file;
-  GInputStream   *file_istream;
+  GInputStream   *istream;
   char           *mxc_uri;
 
   gboolean       downloading_file;
@@ -334,10 +334,10 @@ message_file_stream_cb (GObject      *obj,
     g_task_return_pointer (task, NULL, NULL);
   else
     {
-      self->file_istream = (GInputStream *)g_file_read (out_file, NULL, NULL);
-      g_object_set_data_full (G_OBJECT (self->file_istream), "out-file",
+      self->istream = G_INPUT_STREAM (g_file_read (out_file, NULL, NULL));
+      g_object_set_data_full (G_OBJECT (self->istream), "out-file",
                               out_file, g_object_unref);
-      g_task_return_pointer (task, g_object_ref (self->file_istream), g_object_unref);
+      g_task_return_pointer (task, g_object_ref (self->istream), g_object_unref);
     }
 }
 
@@ -384,12 +384,13 @@ cm_room_message_event_get_file_async (CmRoomMessageEvent    *self,
       return;
     }
 
-  if (self->file && !self->mxc_uri && !self->file_istream)
-    self->file_istream = (gpointer)g_file_read (self->file, NULL, NULL);
+  /* FIXME the following is not async */
+  if (self->file && !self->mxc_uri && !self->istream)
+    self->istream = G_INPUT_STREAM (g_file_read (self->file, NULL, NULL));
 
-  if (self->file_istream)
+  if (self->istream)
     {
-      g_task_return_pointer (task, g_object_ref (self->file_istream), g_object_unref);
+      g_task_return_pointer (task, g_object_ref (self->istream), g_object_unref);
       return;
     }
 
