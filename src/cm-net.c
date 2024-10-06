@@ -178,10 +178,13 @@ read_from_stream (GObject      *object,
 
       if (*(content->data) != '{' &&
           content->len < 1024 &&
-          g_ascii_isalnum (*(content->data)))
-        g_warning ("Invalid data: %s", (char *)content->data);
-
-      g_task_run_in_thread (task, parse_from_data);
+          g_ascii_isalnum (*(content->data))) {
+          g_warning ("Invalid data: %s", (char *)content->data);
+          g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                                   "Invalid data received: %s", (char *)content->data);
+      } else {
+          g_task_run_in_thread (task, parse_from_data);
+      }
     }
 }
 
