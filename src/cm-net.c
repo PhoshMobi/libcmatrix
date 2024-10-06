@@ -686,9 +686,12 @@ cm_net_put_file_async (CmNet                 *self,
   local_task = g_task_new (self, cancellable, put_file_async_cb, self);
   g_task_set_task_data (local_task, task, g_object_unref);
 
-  if (progress_callback)
+  if (progress_callback) {
+    g_object_set_data (G_OBJECT (msg), "progress-cb", progress_callback);
+    g_object_set_data (G_OBJECT (msg), "progress-cb-data", progress_user_data);
     g_signal_connect_object (msg, "wrote-body-data",
                              G_CALLBACK (wrote_body_data_cb), task, G_CONNECT_SWAPPED);
+  }
 
   soup_session_send_async (self->file_session, msg, 0, cancellable,
                            session_send_cb, local_task);
