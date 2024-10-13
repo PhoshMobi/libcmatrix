@@ -286,8 +286,8 @@ cm_room_message_event_get_file_path (CmRoomMessageEvent *self)
 
 void
 cm_room_message_event_set_file (CmRoomMessageEvent *self,
-                                const char         *body,
-                                GFile              *file)
+                                GFile              *file,
+                                const char         *body)
 {
   g_return_if_fail (CM_IS_ROOM_MESSAGE_EVENT (self));
   g_return_if_fail (self->type == CM_CONTENT_TYPE_FILE);

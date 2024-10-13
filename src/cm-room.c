@@ -1881,7 +1881,7 @@ cm_room_send_file_async (CmRoom                *self,
 
   message = cm_room_message_event_new (CM_CONTENT_TYPE_FILE);
   cm_event_set_state (CM_EVENT (message), CM_EVENT_STATE_WAITING);
-  cm_room_message_event_set_file (message, body, file);
+  cm_room_message_event_set_file (message, file, body);
   cm_event_create_txn_id (CM_EVENT (message),
                           cm_client_pop_event_id (self->client));
   g_task_set_task_data (task, message, g_object_unref);
