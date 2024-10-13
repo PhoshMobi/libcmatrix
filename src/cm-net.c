@@ -600,7 +600,6 @@ put_file_async_cb (GObject      *obj,
   g_assert (CM_IS_NET (self));
 
   root = g_task_propagate_pointer (G_TASK (result), &error);
-  g_assert_no_error (error);
 
   if (root)
     {
