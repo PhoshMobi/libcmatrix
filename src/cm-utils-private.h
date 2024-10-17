@@ -84,7 +84,7 @@ GStrv         cm_utils_verify_homeserver_finish (GAsyncResult        *result,
                                                  GError             **error);
 void          cm_utils_save_url_to_path_async     (CmClient              *client,
                                                    const char            *uri,
-                                                   char                  *file_path,
+                                                   const char            *file_path,
                                                    GCancellable          *cancellable,
                                                    GFileProgressCallback  progress_callback,
                                                    gpointer               progress_user_data,

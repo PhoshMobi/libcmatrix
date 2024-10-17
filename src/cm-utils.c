@@ -1460,7 +1460,7 @@ find_file_enc_cb (GObject      *object,
 void
 cm_utils_save_url_to_path_async (CmClient              *client,
                                  const char            *uri,
-                                 char                  *file_path,
+                                 const char            *file_path,
                                  GCancellable          *cancellable,
                                  GFileProgressCallback  progress_callback,
                                  gpointer               progress_user_data,
@@ -1477,7 +1477,7 @@ cm_utils_save_url_to_path_async (CmClient              *client,
 
   task = g_task_new (client, cancellable, callback, user_data);
   g_object_set_data_full (G_OBJECT (task), "uri", g_strdup (uri), g_free);
-  g_object_set_data_full (G_OBJECT (task), "path", file_path, g_free);
+  g_object_set_data_full (G_OBJECT (task), "path", g_strdup (file_path), g_free);
   g_object_set_data (G_OBJECT (task), "progress-cb", progress_callback);
   g_object_set_data (G_OBJECT (task), "progress-cb-data", progress_user_data);
 

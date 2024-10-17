@@ -1042,8 +1042,8 @@ cm_room_get_avatar_async (CmRoom              *self,
   if (avatar_url)
     {
       g_autofree char *file_name = NULL;
+      g_autofree char *file_path = NULL;
       const char *path;
-      char *file_path;
 
       path = cm_matrix_get_data_dir ();
       file_name = g_path_get_basename (avatar_url);
