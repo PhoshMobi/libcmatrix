@@ -62,7 +62,7 @@ room_message_generate_json (CmRoomMessageEvent *self,
 
       name = g_file_get_basename (file);
       json_object_set_string_member (root, "msgtype", "m.file");
-      json_object_set_string_member (root, "body", name);
+      json_object_set_string_member (root, "body", body ?: name);
       json_object_set_string_member (root, "filename", name);
       if (!cm_room_is_encrypted (room))
         {
