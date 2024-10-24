@@ -990,7 +990,7 @@ cm_room_get_avatar_async (CmRoom              *self,
   CmEvent *event;
 
   task = g_task_new (self, cancellable, callback, user_data);
-  g_task_set_source_tag (task, cm_user_get_avatar_async);
+  g_task_set_source_tag (task, cm_room_get_avatar_async);
 
   g_debug ("(%p) Get avatar", self);
 
@@ -1078,6 +1078,8 @@ cm_room_get_avatar_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), NULL);
   g_return_val_if_fail (G_IS_TASK (result), NULL);
   g_return_val_if_fail (!error || !*error, NULL);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_get_avatar_async);
 
   return g_task_propagate_pointer (G_TASK (result), error);
 }
@@ -1539,6 +1541,7 @@ room_send_message_from_queue (CmRoom *self)
       progress_user_data = g_object_get_data (G_OBJECT (message_task), "progress-cb-data");
 
       task = g_task_new (self, NULL, NULL, NULL);
+      g_task_set_source_tag (task, room_send_message_from_queue);
       g_task_set_task_data (task, g_object_ref (message_task), g_object_unref);
       g_debug ("(%p) Upload file, txn-id: '%s'",
                self, cm_event_get_txn_id (CM_EVENT (message)));
@@ -1613,6 +1616,7 @@ cm_room_accept_invite_async (CmRoom              *self,
   g_return_if_fail (!self->is_accepting_invite);
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_accept_invite_async);
 
   g_debug ("(%p) Accept room invite", self);
 
@@ -1664,6 +1668,8 @@ cm_room_accept_invite_finish (CmRoom        *self,
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
 
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_accept_invite_async);
+
   return g_task_propagate_boolean (G_TASK (result), error);
 }
 
@@ -1702,6 +1708,7 @@ cm_room_reject_invite_async (CmRoom              *self,
   g_return_if_fail (!self->is_accepting_invite);
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_reject_invite_async);
 
   g_debug ("(%p) Reject room invite", self);
 
@@ -1752,6 +1759,8 @@ cm_room_reject_invite_finish (CmRoom        *self,
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
 
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_reject_invite_async);
+
   return g_task_propagate_boolean (G_TASK (result), error);
 }
 
@@ -1785,6 +1794,7 @@ cm_room_send_text_async (CmRoom              *self,
   g_return_val_if_fail (CM_IS_ROOM (self), NULL);
 
   task = g_task_new (self, cancellable, callback, user_data);
+
   message = cm_room_message_event_new (CM_CONTENT_TYPE_TEXT);
   cm_event_set_state (CM_EVENT (message), CM_EVENT_STATE_WAITING);
   cm_room_message_event_set_body (message, text);
@@ -1829,6 +1839,8 @@ cm_room_send_text_finish (CmRoom       *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_send_text_async);
 
   return g_task_propagate_pointer (G_TASK (result), error);
 }
@@ -1898,6 +1910,8 @@ cm_room_send_file_finish (CmRoom        *self,
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
 
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_send_file_async);
+
   return g_task_propagate_pointer (G_TASK (result), error);
 }
 
@@ -1952,6 +1966,7 @@ cm_room_set_typing_notice_async (CmRoom              *self,
   g_return_if_fail (CM_IS_ROOM (self));
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_set_typing_notice_async);
   g_object_set_data (G_OBJECT (task), "was-typing", GINT_TO_POINTER (self->typing));
   g_object_set_data (G_OBJECT (task), "was-typing-time", GSIZE_TO_POINTER (self->typing_set_time));
 
@@ -1999,6 +2014,8 @@ cm_room_set_typing_notice_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_set_typing_notice_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2063,6 +2080,7 @@ cm_room_enable_encryption_async (CmRoom              *self,
     g_return_if_fail (CM_IS_ROOM (self));
 
     task = g_task_new (self, cancellable, callback, user_data);
+    g_task_set_source_tag (task, cm_room_enable_encryption_async);
     g_debug ("(%p) Enable encryption", self);
 
     if (cm_room_is_encrypted (self))
@@ -2098,6 +2116,8 @@ cm_room_enable_encryption_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_enable_encryption_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2143,6 +2163,8 @@ cm_room_leave_async (CmRoom              *self,
 
     g_debug ("(%p) leave room", self);
     task = g_task_new (self, cancellable, callback, user_data);
+    g_task_set_source_tag (task, cm_room_leave_async);
+
     uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/leave", self->room_id);
     cm_net_send_json_async (cm_client_get_net (self->client), 1, NULL,
                             uri, SOUP_METHOD_POST,
@@ -2157,6 +2179,8 @@ cm_room_leave_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_leave_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2206,6 +2230,7 @@ cm_room_set_read_marker_async (CmRoom              *self,
   json_object_set_string_member (root, "m.read", read_receipt_id);
 
   task = g_task_new (self, NULL, callback, user_data);
+  g_task_set_source_tag (task, cm_room_set_read_marker_async);
 
   CM_TRACE ("(%p) Set read marker", self);
   uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/read_markers", self->room_id);
@@ -2222,6 +2247,8 @@ cm_room_set_read_marker_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_set_read_marker_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2284,6 +2311,7 @@ cm_room_load_prev_batch_async (CmRoom              *self,
   g_return_if_fail (CM_IS_ROOM (self));
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_load_prev_batch_async);
   prev_batch = cm_room_get_prev_batch (self);
   g_debug ("(%p) Load prev batch", self);
 
@@ -2321,6 +2349,8 @@ cm_room_load_prev_batch_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), NULL);
   g_return_val_if_fail (G_IS_TASK (result), NULL);
   g_return_val_if_fail (!error || !*error, NULL);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_load_prev_batch_async);
 
   return g_task_propagate_pointer (G_TASK (result), error);
 }
@@ -2447,6 +2477,7 @@ cm_room_load_past_events_async (CmRoom              *self,
   g_return_if_fail (!from || CM_IS_ROOM_EVENT (from));
 
   task = g_task_new (self, NULL, callback, user_data);
+  g_task_set_source_tag (task, cm_room_load_past_events_async);
   g_object_set_data (G_OBJECT (task), "callback", callback);
   g_object_set_data (G_OBJECT (task), "cb-user-data", user_data);
   g_debug ("(%p) Load db events", self);
@@ -2498,6 +2529,8 @@ cm_room_load_past_events_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_load_past_events_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2637,6 +2670,7 @@ cm_room_load_joined_members_async (CmRoom              *self,
   g_return_if_fail (CM_IS_ROOM (self));
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_load_joined_members_async);
   g_debug ("(%p) Load joined members", self);
 
   if (self->joined_members_loaded)
@@ -2669,6 +2703,8 @@ cm_room_load_joined_members_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_load_joined_members_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2719,6 +2755,7 @@ cm_room_load_async (CmRoom              *self,
   g_autofree char *uri = NULL;
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_load_async);
   g_debug ("(%p) Load room initial sync", self);
 
   if (self->initial_sync_done)
@@ -2752,6 +2789,8 @@ cm_room_load_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_load_async);
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
@@ -2980,6 +3019,7 @@ cm_room_get_event_async (CmRoom              *self,
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
   task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_get_event_async);
 
   g_debug ("(%p) Fetch event %s", self, event_id);
 
@@ -3013,6 +3053,8 @@ cm_room_get_event_finish (CmRoom        *self,
   g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);
   g_return_val_if_fail (!error || !*error, FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_get_event_async);
 
   return g_task_propagate_pointer (G_TASK (result), error);
 }
