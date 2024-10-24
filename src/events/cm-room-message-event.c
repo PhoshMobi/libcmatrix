@@ -12,7 +12,6 @@
 #include "cm-config.h"
 
 #include "cm-utils-private.h"
-#include "cm-common.h"
 #include "cm-matrix-private.h"
 #include "cm-enums.h"
 #include "cm-client-private.h"
