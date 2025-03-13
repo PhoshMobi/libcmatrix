@@ -1995,8 +1995,14 @@ client_password_login_cb (GObject      *obj,
   cm_set_string_value (&self->device_id, value);
 
   object = cm_utils_json_object_get_object (root, "well_known");
-  object = cm_utils_json_object_get_object (object, "m.homeserver");
-  value = cm_utils_json_object_get_string (object, "base_url");
+  if (object) { /* well_known is optional in the response */
+    const char *homeserver;
+
+    object = cm_utils_json_object_get_object (object, "m.homeserver");
+    homeserver = cm_utils_json_object_get_string (object, "base_url");
+    cm_client_set_homeserver (self, homeserver);
+  }
+
   g_clear_object (&self->cm_enc);
   self->cm_enc = cm_enc_new (self->cm_db, NULL, NULL);
   cm_enc_set_details (self->cm_enc,
@@ -2004,7 +2010,6 @@ client_password_login_cb (GObject      *obj,
                       cm_client_get_device_id (self));
   cm_set_string_value (&self->key, cm_enc_get_device_keys_json (self->cm_enc));
   self->is_logging_in = FALSE;
-  cm_client_set_homeserver (self, value);
   client_set_login_state (self, FALSE, !!cm_net_get_access_token (self->cm_net));
   client_mark_for_save (self, TRUE, TRUE);
   cm_client_save (self);
