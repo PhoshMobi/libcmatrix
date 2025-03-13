@@ -740,6 +740,7 @@ cm_client_new_from_secret (gpointer  secret_retrievable,
 
   return self;
 }
+
 static void
 save_secrets_cb (GObject      *object,
                  GAsyncResult *result,
@@ -1331,9 +1332,10 @@ cm_client_get_user_id (CmClient *self)
 /**
  * cm_client_set_homeserver:
  * @self: A #CmClient
- * @homeserver: The homserver URL
+ * @homeserver: The homeserver URL
  *
  * Set the matrix Home server URL for the client.
+ * Must be set, before we can start syncing.
  *
  * Returns: %TRUE if @homeserver is valid,
  * %FALSE otherwise.
@@ -1541,7 +1543,7 @@ cm_client_get_user_list (CmClient *self)
  * @self: A #CmClient
  * @device_id: The device ID
  *
- * Set the device ID for @client.
+ * Set the device ID for @self.
  */
 void
 cm_client_set_device_id (CmClient   *self,
@@ -1561,7 +1563,7 @@ cm_client_set_device_id (CmClient   *self,
  *
  * Get the device ID of the client @self.
  * Device ID may be available only after
- * a successful login.
+ * at least a single successful login.
  *
  * Returns: (nullable): The Device ID string
  */
