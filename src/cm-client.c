@@ -398,6 +398,9 @@ client_login_with_password_async (CmClient            *self,
   json_object_set_string_member (object, "password", self->password);
   json_object_set_string_member (object, "initial_device_display_name", self->device_name ?: "CMatrix");
 
+  if (self->device_id)
+    json_object_set_string_member (object, "device_id", self->device_id);
+
   child = json_object_new ();
 
   if (cm_utils_user_name_is_email (cm_account_get_login_id (self->cm_account)))
