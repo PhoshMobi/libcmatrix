@@ -392,7 +392,7 @@ client_login_with_password_async (CmClient            *self,
   g_debug ("(%p) Logging in with '%s'", self,
            cm_utils_anonymize (str, cm_account_get_login_id (self->cm_account)));
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-login */
+  /* https://spec.matrix.org/v1.1/client-server-api/#post_matrixclientv3login */
   object = json_object_new ();
   json_object_set_string_member (object, "type", "m.login.password");
   json_object_set_string_member (object, "password", self->password);
@@ -420,7 +420,7 @@ client_login_with_password_async (CmClient            *self,
   task = g_task_new (self, cancellable, callback, user_data);
   g_task_set_source_tag (task, client_login_with_password_async);
   cm_net_send_json_async (self->cm_net, 2, object,
-                          "/_matrix/client/r0/login", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/login", SOUP_METHOD_POST,
                           NULL, cancellable, send_json_cb,
                           task);
 }
@@ -1982,7 +1982,7 @@ client_password_login_cb (GObject      *obj,
       return;
     }
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-login */
+  /* https://spec.matrix.org/v1.1/client-server-api/#post_matrixclientv3login */
   value = cm_utils_json_object_get_string (root, "user_id");
   self->is_logging_in = FALSE;
   cm_client_set_user_id (self, value);
