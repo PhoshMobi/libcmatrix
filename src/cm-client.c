@@ -2590,8 +2590,8 @@ matrix_take_red_pill (CmClient *self,
                       gpointer  tsk)
 {
   g_autoptr(GTask) task = tsk;
+  g_autoptr (GHashTable) query = NULL;
   GCancellable *cancellable;
-  GHashTable *query;
 
   g_assert (CM_IS_CLIENT (self));
 
