@@ -2928,7 +2928,7 @@ matrix_start_sync (CmClient *self,
       self->room_list_loading = TRUE;
       g_debug ("(%p) Get joined rooms", self);
       cm_net_send_json_async (self->cm_net, 0, NULL,
-                              "/_matrix/client/r0/joined_rooms", SOUP_METHOD_GET,
+                              "/_matrix/client/v3/joined_rooms", SOUP_METHOD_GET,
                               NULL, NULL, get_joined_rooms_cb,
                               g_object_ref (self));
 
