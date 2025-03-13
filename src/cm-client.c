@@ -2621,7 +2621,7 @@ matrix_take_red_pill (CmClient *self,
 
   cancellable = g_task_get_cancellable (task);
   cm_net_send_json_async (self->cm_net, 2, NULL,
-                          "/_matrix/client/r0/sync", SOUP_METHOD_GET,
+                          "/_matrix/client/v3/sync", SOUP_METHOD_GET,
                           query, cancellable, matrix_take_red_pill_cb,
                           g_object_ref (self));
 }
