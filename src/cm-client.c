@@ -505,7 +505,7 @@ matrix_upload_filter (CmClient *self,
     }
 
   cancellable = g_task_get_cancellable (task);
-  uri = g_strconcat ("/_matrix/client/r0/user/", cm_user_get_id (CM_USER (self->cm_account)), "/filter", NULL);
+  uri = g_strconcat ("/_matrix/client/v3/user/", cm_user_get_id (CM_USER (self->cm_account)), "/filter", NULL);
   cm_net_send_json_async (self->cm_net, 2, json_object_ref (filter),
                           uri, SOUP_METHOD_POST,
                           NULL, cancellable, cm_upload_filter_cb,
