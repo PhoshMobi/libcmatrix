@@ -1553,6 +1553,9 @@ cm_client_set_device_id (CmClient   *self,
   g_return_if_fail (!self->is_logging_in);
   g_return_if_fail (!self->login_success);
 
+  g_debug ("Setting new device id for client [%p]: %s (old: %s)",
+           self, device_id, self->device_id);
+
   g_free (self->device_id);
   self->device_id = g_strdup (device_id);
 }
