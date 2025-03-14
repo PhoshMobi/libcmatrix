@@ -3312,7 +3312,7 @@ cm_client_get_pushers_async (CmClient              *self,
   g_task_set_source_tag (task, cm_client_get_pushers_async);
 
   cm_net_send_data_async (self->cm_net, 0, NULL, 0,
-                          "/_matrix/client/r0/pushers", SOUP_METHOD_GET,
+                          "/_matrix/client/v3/pushers", SOUP_METHOD_GET,
                           NULL, self->cancellable, get_pushers_cb,
                           g_steal_pointer (&task));
 }
@@ -3480,7 +3480,7 @@ cm_client_add_pusher_async (CmClient              *self,
   object = build_pusher_json (pusher);
 
   cm_net_send_json_async (self->cm_net, 0, object,
-                          "/_matrix/client/r0/pushers/set", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/pushers/set", SOUP_METHOD_POST,
                           NULL, self->cancellable, add_pusher_cb,
                           g_steal_pointer (&task));
 }
@@ -3625,7 +3625,7 @@ cm_client_remove_pusher_async (CmClient              *self,
   json_object_set_string_member (object, "kind", NULL);
 
   cm_net_send_json_async (self->cm_net, 0, object,
-                          "/_matrix/client/r0/pushers/set", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/pushers/set", SOUP_METHOD_POST,
                           NULL, self->cancellable, remove_pusher_cb,
                           g_steal_pointer (&task));
 }
