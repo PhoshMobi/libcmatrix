@@ -3608,7 +3608,7 @@ cm_client_remove_pusher_async (CmClient              *self,
 
   object = build_pusher_json (pusher);
   /* NULL means delete: */
-  json_object_set_string_member(object, "kind", NULL);
+  json_object_set_string_member (object, "kind", NULL);
 
   cm_net_send_json_async (self->cm_net, 0, object,
                           "/_matrix/client/r0/pushers/set", SOUP_METHOD_POST,
