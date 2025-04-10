@@ -1966,13 +1966,13 @@ cm_room_set_typing_notice_async (CmRoom              *self,
   self->typing_set_time = g_get_monotonic_time ();
   self->typing = !!typing;
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#put-matrix-client-r0-rooms-roomid-typing-userid */
+  /* https://spec.matrix.org/v1.14/client-server-api/#typing-notifications */
   object = json_object_new ();
   json_object_set_boolean_member (object, "typing", !!typing);
   if (typing)
     json_object_set_int_member (object, "timeout", TYPING_TIMEOUT);
 
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id,
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id,
                      "/typing/", cm_client_get_user_id (self->client), NULL);
 
   cm_net_send_json_async (cm_client_get_net (self->client), 0, object,
