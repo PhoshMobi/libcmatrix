@@ -1724,7 +1724,7 @@ cm_client_join_room_async (CmClient            *self,
 
   task = g_task_new (self, cancellable, callback, user_data);
   g_task_set_source_tag (task, cm_client_join_room_async);
-  uri = g_strconcat ("/_matrix/client/r0/join/", id_or_alias, NULL);
+  uri = g_strconcat ("/_matrix/client/v3/join/", id_or_alias, NULL);
   cm_net_send_data_async (self->cm_net, 2, NULL, 0,
                           uri, SOUP_METHOD_POST, NULL,
                           cancellable,
