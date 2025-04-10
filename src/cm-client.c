@@ -2915,7 +2915,7 @@ matrix_start_sync (CmClient *self,
 
       self->direct_room_list_loading = TRUE;
 
-      uri = g_strconcat ("/_matrix/client/r0/user/",
+      uri = g_strconcat ("/_matrix/client/v3/user/",
                          cm_user_get_id (CM_USER (self->cm_account)),
                          "/account_data/m.direct", NULL);
       g_debug ("(%p) Get direct rooms", self);
