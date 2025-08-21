@@ -554,6 +554,8 @@ cm_room_event_list_parse_events (CmRoomEventList *self,
         g_set_object (&self->room_avatar_event, event);
       else if (type == CM_M_ROOM_CANONICAL_ALIAS)
         g_set_object (&self->canonical_alias_event, event);
+      else if (type == CM_M_ROOM_CREATE)
+        g_set_object (&self->room_create_event, event);
       else if (type == CM_M_ROOM_ENCRYPTION)
         g_set_object (&self->encryption_event, event);
       else if (type == CM_M_ROOM_GUEST_ACCESS)
@@ -579,6 +581,7 @@ cm_room_event_list_parse_events (CmRoomEventList *self,
 
       if (type == CM_M_ROOM_AVATAR ||
           type == CM_M_ROOM_CANONICAL_ALIAS ||
+          type == CM_M_ROOM_CREATE ||
           type == CM_M_ROOM_ENCRYPTION ||
           type == CM_M_ROOM_GUEST_ACCESS ||
           type == CM_M_ROOM_HISTORY_VISIBILITY ||
