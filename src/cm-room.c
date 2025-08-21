@@ -3095,3 +3095,17 @@ cm_room_get_topic (CmRoom *self)
 
   return cm_room_event_get_topic (CM_ROOM_EVENT (event));
 }
+
+const char *
+cm_room_get_room_version (CmRoom *self)
+{
+  CmEvent *event;
+
+  g_return_val_if_fail (CM_IS_ROOM (self), FALSE);
+
+  event = cm_room_event_list_get_event (self->room_event, CM_M_ROOM_CREATE);
+  if (!event)
+    return NULL;
+
+  return cm_room_event_get_room_version (CM_ROOM_EVENT (event));
+}
