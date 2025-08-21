@@ -283,7 +283,7 @@ cm_room_event_list_get_event (CmRoomEventList *self,
     return self->room_create_event;
 
   if (type == CM_M_ROOM_NAME)
-    return self->tombstone_event;
+    return self->room_name_event;
 
   if (type == CM_M_ROOM_TOPIC)
     return self->room_topic_event;
