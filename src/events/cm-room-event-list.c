@@ -285,12 +285,11 @@ cm_room_event_list_get_event (CmRoomEventList *self,
   if (type == CM_M_ROOM_NAME)
     return self->room_name_event;
 
-  if (type == CM_M_ROOM_TOPIC)
-    return self->room_topic_event;
-
   if (type == CM_M_ROOM_TOMBSTONE)
     return self->tombstone_event;
 
+  if (type == CM_M_ROOM_TOPIC)
+    return self->room_topic_event;
 
   return NULL;
 }
@@ -446,8 +445,8 @@ cm_room_event_list_set_local_json (CmRoomEventList *self,
   set_event_from_json (room, self->room_avatar_event, local, CM_M_ROOM_AVATAR);
   set_event_from_json (room, self->room_create_event, local, CM_M_ROOM_CREATE);
   set_event_from_json (room, self->room_name_event, local, CM_M_ROOM_NAME);
-  set_event_from_json (room, self->room_topic_event, local, CM_M_ROOM_TOPIC);
   set_event_from_json (room, self->tombstone_event, local, CM_M_ROOM_TOMBSTONE);
+  set_event_from_json (room, self->room_topic_event, local, CM_M_ROOM_TOPIC);
 }
 
 static JsonObject *
