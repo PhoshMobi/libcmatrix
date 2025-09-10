@@ -2208,7 +2208,7 @@ cm_room_set_read_marker_async (CmRoom              *self,
   task = g_task_new (self, NULL, callback, user_data);
 
   CM_TRACE ("(%p) Set read marker", self);
-  uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/read_markers", self->room_id);
+  uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/read_markers", self->room_id);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, root,
                           uri, SOUP_METHOD_POST,
                           NULL, NULL, room_set_read_marker_cb, task);
