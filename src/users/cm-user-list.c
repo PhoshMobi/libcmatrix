@@ -808,7 +808,7 @@ cm_user_list_upload_keys_async (CmUserList          *self,
   event = cm_event_new (CM_M_UNKNOWN);
   cm_event_create_txn_id (event, cm_client_pop_event_id (self->client));
 
-  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.room.encrypted/%s",
+  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.room.encrypted/%s",
                          cm_event_get_txn_id (event));
   cm_net_send_json_async (cm_client_get_net (self->client),
                           0, root, uri, SOUP_METHOD_PUT,
