@@ -538,6 +538,7 @@ cm_net_get_file_async (CmNet                 *self,
                          "/_matrix/client/v1/media/download/", file_url, NULL);
       needs_auth = TRUE;
     } else {
+      /* XXX this endpoint is deprecated */
       url = g_strconcat (self->homeserver,
                          "/_matrix/media/r0/download/", file_url, NULL);
     }
