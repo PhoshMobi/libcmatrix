@@ -2074,7 +2074,7 @@ cm_room_enable_encryption_async (CmRoom              *self,
 
     object = json_object_new ();
     json_object_set_string_member (object, "algorithm", ALGORITHM_MEGOLM);
-    uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/state/m.room.encryption", NULL);
+    uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/state/m.room.encryption", NULL);
     cm_net_send_json_async (cm_client_get_net (self->client), 2, object, uri, SOUP_METHOD_PUT,
                             NULL, cancellable, room_set_encryption_cb, task);
 }
