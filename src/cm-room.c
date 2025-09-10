@@ -2143,7 +2143,7 @@ cm_room_leave_async (CmRoom              *self,
 
     g_debug ("(%p) leave room", self);
     task = g_task_new (self, cancellable, callback, user_data);
-    uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/leave", self->room_id);
+    uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/leave", self->room_id);
     cm_net_send_json_async (cm_client_get_net (self->client), 1, NULL,
                             uri, SOUP_METHOD_POST,
                             NULL, cancellable, room_leave_cb, task);
