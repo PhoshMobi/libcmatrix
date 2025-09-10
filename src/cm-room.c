@@ -2734,7 +2734,7 @@ cm_room_load_async (CmRoom              *self,
     }
 
   self->loading_initial_sync = TRUE;
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/state", NULL);
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/state", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, NULL,
                           uri, SOUP_METHOD_GET,
                           NULL, NULL, get_room_state_cb,
