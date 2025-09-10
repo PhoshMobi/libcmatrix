@@ -2340,7 +2340,7 @@ handle_to_device (CmClient   *self,
                   reply_event = cm_olm_sas_get_key_event (olm_sas);
 
                   obj = cm_event_get_json (reply_event);
-                  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.key/%s",
+                  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.key/%s",
                                          cm_event_get_txn_id (reply_event));
                   cm_net_send_json_async (self->cm_net, 0, obj, uri, SOUP_METHOD_PUT,
                                           NULL, NULL,
