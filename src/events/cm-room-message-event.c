@@ -138,11 +138,11 @@ cm_room_message_event_get_api_url (CmEvent  *event,
   g_return_val_if_fail (cm_event_get_txn_id (event), NULL);
 
   if (cm_room_is_encrypted (room))
-    uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/send/m.room.encrypted/%s",
+    uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/send/m.room.encrypted/%s",
                            cm_room_get_id (room),
                            cm_event_get_txn_id (event));
   else
-    uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/send/m.room.message/%s",
+    uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/send/m.room.message/%s",
                            cm_room_get_id (room),
                            cm_event_get_txn_id (event));
 
