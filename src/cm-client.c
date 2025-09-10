@@ -2145,7 +2145,7 @@ matrix_upload_key (CmClient *self)
 
   g_debug ("(%p) Upload key", self);
   cm_net_send_data_async (self->cm_net, 2, key, strlen (key),
-                          "/_matrix/client/r0/keys/upload", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/keys/upload", SOUP_METHOD_POST,
                           NULL, self->cancellable, upload_key_cb,
                           g_object_ref (self));
 }
