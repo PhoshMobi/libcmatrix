@@ -2983,7 +2983,7 @@ cm_room_get_event_async (CmRoom              *self,
 
   g_debug ("(%p) Fetch event %s", self, event_id);
 
-  url = g_strdup_printf ("/_matrix/client/r0/rooms/%s/event/%s", self->room_id, event_id);
+  url = g_strdup_printf ("/_matrix/client/v3/rooms/%s/event/%s", self->room_id, event_id);
   cm_net_send_data_async (cm_client_get_net (self->client), 0, NULL, 0,
                           url, SOUP_METHOD_GET, NULL,
                           cancellable,
