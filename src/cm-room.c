@@ -2297,14 +2297,17 @@ cm_room_load_prev_batch_async (CmRoom              *self,
   /* Create a query to get past 30 messages */
   query = g_hash_table_new_full (g_str_hash, g_str_equal, free,
                                  (GDestroyNotify)cm_utils_free_buffer);
+  /* The "from" parameter is no longer required since v1.3 and
+   * if omitted can be used to fetch  the whole visible history
+   */
   g_hash_table_insert (query, g_strdup ("from"), g_strdup (prev_batch));
   g_hash_table_insert (query, g_strdup ("dir"), g_strdup ("b"));
   g_hash_table_insert (query, g_strdup ("limit"), g_strdup ("30"));
   /* if (upto_batch) */
   /*   g_hash_table_insert (query, g_strdup ("to"), g_strdup (upto_batch)); */
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#get-matrix-client-r0-rooms-roomid-messages */
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/messages", NULL);
+  /* https://spec.matrix.org/v1.15/client-server-api/#get_matrixclientv3roomsroomidmessages */
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/messages", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, NULL,
                           uri, SOUP_METHOD_GET,
                           query, cancellable, room_load_prev_batch_cb, task);
