@@ -2656,7 +2656,7 @@ cm_room_load_joined_members_async (CmRoom              *self,
 
   self->joined_members_loading = TRUE;
 
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/joined_members", NULL);
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/joined_members", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), -1, NULL, uri, SOUP_METHOD_GET,
                           NULL, cancellable, get_joined_members_cb, g_steal_pointer (&task));
 }
