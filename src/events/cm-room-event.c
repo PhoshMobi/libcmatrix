@@ -41,6 +41,7 @@ typedef struct
   union {
     char        *replacement_room_id;
     char        *topic;
+    char        *room_version;
   } c;
 
   guint          enc_rotation_count;
@@ -86,6 +87,9 @@ cm_room_event_finalize (GObject *object)
         break;
       case CM_M_ROOM_TOPIC:
         g_clear_pointer (&priv->c.topic, g_free);
+        break;
+      case CM_M_ROOM_CREATE:
+        g_clear_pointer (&priv->c.room_version, g_free);
         break;
       default:
         break;
@@ -203,6 +207,11 @@ cm_room_event_new_from_json (gpointer    room,
     {
       value = cm_utils_json_object_get_string (child, "topic");
       priv->c.topic = g_strdup (value);
+    }
+  else if (type == CM_M_ROOM_CREATE)
+    {
+      value = cm_utils_json_object_get_string (child, "room_version");
+      priv->c.room_version = g_strdup (value);
     }
 
   return self;
@@ -532,4 +541,15 @@ cm_room_event_get_topic (CmRoomEvent *self)
   ret_val_if_fail (self, CM_M_ROOM_TOPIC, 0, NULL);
 
   return priv->c.topic;
+}
+
+const char *
+cm_room_event_get_room_version (CmRoomEvent *self)
+{
+  CmRoomEventPrivate *priv = cm_room_event_get_instance_private (self);
+
+  g_return_val_if_fail (CM_IS_ROOM_EVENT (self), NULL);
+  ret_val_if_fail (self, CM_M_ROOM_CREATE, 0, NULL);
+
+  return priv->c.room_version;
 }

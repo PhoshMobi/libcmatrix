@@ -283,14 +283,13 @@ cm_room_event_list_get_event (CmRoomEventList *self,
     return self->room_create_event;
 
   if (type == CM_M_ROOM_NAME)
-    return self->tombstone_event;
-
-  if (type == CM_M_ROOM_TOPIC)
-    return self->room_topic_event;
+    return self->room_name_event;
 
   if (type == CM_M_ROOM_TOMBSTONE)
     return self->tombstone_event;
 
+  if (type == CM_M_ROOM_TOPIC)
+    return self->room_topic_event;
 
   return NULL;
 }
@@ -446,8 +445,8 @@ cm_room_event_list_set_local_json (CmRoomEventList *self,
   set_event_from_json (room, self->room_avatar_event, local, CM_M_ROOM_AVATAR);
   set_event_from_json (room, self->room_create_event, local, CM_M_ROOM_CREATE);
   set_event_from_json (room, self->room_name_event, local, CM_M_ROOM_NAME);
-  set_event_from_json (room, self->room_topic_event, local, CM_M_ROOM_TOPIC);
   set_event_from_json (room, self->tombstone_event, local, CM_M_ROOM_TOMBSTONE);
+  set_event_from_json (room, self->room_topic_event, local, CM_M_ROOM_TOPIC);
 }
 
 static JsonObject *
@@ -555,6 +554,8 @@ cm_room_event_list_parse_events (CmRoomEventList *self,
         g_set_object (&self->room_avatar_event, event);
       else if (type == CM_M_ROOM_CANONICAL_ALIAS)
         g_set_object (&self->canonical_alias_event, event);
+      else if (type == CM_M_ROOM_CREATE)
+        g_set_object (&self->room_create_event, event);
       else if (type == CM_M_ROOM_ENCRYPTION)
         g_set_object (&self->encryption_event, event);
       else if (type == CM_M_ROOM_GUEST_ACCESS)
@@ -580,6 +581,7 @@ cm_room_event_list_parse_events (CmRoomEventList *self,
 
       if (type == CM_M_ROOM_AVATAR ||
           type == CM_M_ROOM_CANONICAL_ALIAS ||
+          type == CM_M_ROOM_CREATE ||
           type == CM_M_ROOM_ENCRYPTION ||
           type == CM_M_ROOM_GUEST_ACCESS ||
           type == CM_M_ROOM_HISTORY_VISIBILITY ||

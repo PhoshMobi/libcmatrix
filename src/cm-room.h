@@ -123,5 +123,6 @@ CmEvent      *cm_room_get_event_sync              (CmRoom                *self,
                                                    GCancellable          *cancellable,
                                                    GError               **error);
 const char   *cm_room_get_topic                   (CmRoom                *self);
+const char   *cm_room_get_room_version            (CmRoom                *self);
 
 G_END_DECLS

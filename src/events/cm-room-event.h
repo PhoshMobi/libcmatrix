@@ -31,7 +31,8 @@ struct _CmRoomEventClass
   gpointer reserved[8];
 };
 
-CmRoom *cm_room_event_get_room        (CmRoomEvent *self);
-CmUser *cm_room_event_get_room_member (CmRoomEvent *self);
+CmRoom     *cm_room_event_get_room         (CmRoomEvent *self);
+CmUser     *cm_room_event_get_room_member  (CmRoomEvent *self);
+const char *cm_room_event_get_room_version (CmRoomEvent *self);
 
 G_END_DECLS
