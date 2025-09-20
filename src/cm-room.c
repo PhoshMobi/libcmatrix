@@ -1966,13 +1966,13 @@ cm_room_set_typing_notice_async (CmRoom              *self,
   self->typing_set_time = g_get_monotonic_time ();
   self->typing = !!typing;
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#put-matrix-client-r0-rooms-roomid-typing-userid */
+  /* https://spec.matrix.org/v1.14/client-server-api/#typing-notifications */
   object = json_object_new ();
   json_object_set_boolean_member (object, "typing", !!typing);
   if (typing)
     json_object_set_int_member (object, "timeout", TYPING_TIMEOUT);
 
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id,
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id,
                      "/typing/", cm_client_get_user_id (self->client), NULL);
 
   cm_net_send_json_async (cm_client_get_net (self->client), 0, object,
@@ -2074,7 +2074,7 @@ cm_room_enable_encryption_async (CmRoom              *self,
 
     object = json_object_new ();
     json_object_set_string_member (object, "algorithm", ALGORITHM_MEGOLM);
-    uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/state/m.room.encryption", NULL);
+    uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/state/m.room.encryption", NULL);
     cm_net_send_json_async (cm_client_get_net (self->client), 2, object, uri, SOUP_METHOD_PUT,
                             NULL, cancellable, room_set_encryption_cb, task);
 }
@@ -2143,7 +2143,7 @@ cm_room_leave_async (CmRoom              *self,
 
     g_debug ("(%p) leave room", self);
     task = g_task_new (self, cancellable, callback, user_data);
-    uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/leave", self->room_id);
+    uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/leave", self->room_id);
     cm_net_send_json_async (cm_client_get_net (self->client), 1, NULL,
                             uri, SOUP_METHOD_POST,
                             NULL, cancellable, room_leave_cb, task);
@@ -2208,7 +2208,7 @@ cm_room_set_read_marker_async (CmRoom              *self,
   task = g_task_new (self, NULL, callback, user_data);
 
   CM_TRACE ("(%p) Set read marker", self);
-  uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/read_markers", self->room_id);
+  uri = g_strdup_printf ("/_matrix/client/v3/rooms/%s/read_markers", self->room_id);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, root,
                           uri, SOUP_METHOD_POST,
                           NULL, NULL, room_set_read_marker_cb, task);
@@ -2297,14 +2297,17 @@ cm_room_load_prev_batch_async (CmRoom              *self,
   /* Create a query to get past 30 messages */
   query = g_hash_table_new_full (g_str_hash, g_str_equal, free,
                                  (GDestroyNotify)cm_utils_free_buffer);
+  /* The "from" parameter is no longer required since v1.3 and
+   * if omitted can be used to fetch  the whole visible history
+   */
   g_hash_table_insert (query, g_strdup ("from"), g_strdup (prev_batch));
   g_hash_table_insert (query, g_strdup ("dir"), g_strdup ("b"));
   g_hash_table_insert (query, g_strdup ("limit"), g_strdup ("30"));
   /* if (upto_batch) */
   /*   g_hash_table_insert (query, g_strdup ("to"), g_strdup (upto_batch)); */
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#get-matrix-client-r0-rooms-roomid-messages */
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/messages", NULL);
+  /* https://spec.matrix.org/v1.15/client-server-api/#get_matrixclientv3roomsroomidmessages */
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/messages", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, NULL,
                           uri, SOUP_METHOD_GET,
                           query, cancellable, room_load_prev_batch_cb, task);
@@ -2653,7 +2656,7 @@ cm_room_load_joined_members_async (CmRoom              *self,
 
   self->joined_members_loading = TRUE;
 
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/joined_members", NULL);
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/joined_members", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), -1, NULL, uri, SOUP_METHOD_GET,
                           NULL, cancellable, get_joined_members_cb, g_steal_pointer (&task));
 }
@@ -2734,7 +2737,7 @@ cm_room_load_async (CmRoom              *self,
     }
 
   self->loading_initial_sync = TRUE;
-  uri = g_strconcat ("/_matrix/client/r0/rooms/", self->room_id, "/state", NULL);
+  uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/state", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, NULL,
                           uri, SOUP_METHOD_GET,
                           NULL, NULL, get_room_state_cb,
@@ -2980,7 +2983,7 @@ cm_room_get_event_async (CmRoom              *self,
 
   g_debug ("(%p) Fetch event %s", self, event_id);
 
-  url = g_strdup_printf ("/_matrix/client/r0/rooms/%s/event/%s", self->room_id, event_id);
+  url = g_strdup_printf ("/_matrix/client/v3/rooms/%s/event/%s", self->room_id, event_id);
   cm_net_send_data_async (cm_client_get_net (self->client), 0, NULL, 0,
                           url, SOUP_METHOD_GET, NULL,
                           cancellable,

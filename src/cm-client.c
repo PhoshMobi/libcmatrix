@@ -392,11 +392,14 @@ client_login_with_password_async (CmClient            *self,
   g_debug ("(%p) Logging in with '%s'", self,
            cm_utils_anonymize (str, cm_account_get_login_id (self->cm_account)));
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-login */
+  /* https://spec.matrix.org/v1.1/client-server-api/#post_matrixclientv3login */
   object = json_object_new ();
   json_object_set_string_member (object, "type", "m.login.password");
   json_object_set_string_member (object, "password", self->password);
   json_object_set_string_member (object, "initial_device_display_name", self->device_name ?: "CMatrix");
+
+  if (self->device_id)
+    json_object_set_string_member (object, "device_id", self->device_id);
 
   child = json_object_new ();
 
@@ -417,7 +420,7 @@ client_login_with_password_async (CmClient            *self,
   task = g_task_new (self, cancellable, callback, user_data);
   g_task_set_source_tag (task, client_login_with_password_async);
   cm_net_send_json_async (self->cm_net, 2, object,
-                          "/_matrix/client/r0/login", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/login", SOUP_METHOD_POST,
                           NULL, cancellable, send_json_cb,
                           task);
 }
@@ -502,7 +505,7 @@ matrix_upload_filter (CmClient *self,
     }
 
   cancellable = g_task_get_cancellable (task);
-  uri = g_strconcat ("/_matrix/client/r0/user/", cm_user_get_id (CM_USER (self->cm_account)), "/filter", NULL);
+  uri = g_strconcat ("/_matrix/client/v3/user/", cm_user_get_id (CM_USER (self->cm_account)), "/filter", NULL);
   cm_net_send_json_async (self->cm_net, 2, json_object_ref (filter),
                           uri, SOUP_METHOD_POST,
                           NULL, cancellable, cm_upload_filter_cb,
@@ -740,6 +743,7 @@ cm_client_new_from_secret (gpointer  secret_retrievable,
 
   return self;
 }
+
 static void
 save_secrets_cb (GObject      *object,
                  GAsyncResult *result,
@@ -1331,9 +1335,10 @@ cm_client_get_user_id (CmClient *self)
 /**
  * cm_client_set_homeserver:
  * @self: A #CmClient
- * @homeserver: The homserver URL
+ * @homeserver: The homeserver URL
  *
  * Set the matrix Home server URL for the client.
+ * Must be set, before we can start syncing.
  *
  * Returns: %TRUE if @homeserver is valid,
  * %FALSE otherwise.
@@ -1541,7 +1546,7 @@ cm_client_get_user_list (CmClient *self)
  * @self: A #CmClient
  * @device_id: The device ID
  *
- * Set the device ID for @client.
+ * Set the device ID for @self.
  */
 void
 cm_client_set_device_id (CmClient   *self,
@@ -1550,6 +1555,10 @@ cm_client_set_device_id (CmClient   *self,
   g_return_if_fail (CM_IS_CLIENT (self));
   g_return_if_fail (!self->is_logging_in);
   g_return_if_fail (!self->login_success);
+  g_return_if_fail (device_id && *device_id);
+
+  g_debug ("Setting new device id for client [%p]: %s (old: %s)",
+           self, device_id, self->device_id);
 
   g_free (self->device_id);
   self->device_id = g_strdup (device_id);
@@ -1561,7 +1570,7 @@ cm_client_set_device_id (CmClient   *self,
  *
  * Get the device ID of the client @self.
  * Device ID may be available only after
- * a successful login.
+ * at least a single successful login.
  *
  * Returns: (nullable): The Device ID string
  */
@@ -1715,7 +1724,7 @@ cm_client_join_room_async (CmClient            *self,
 
   task = g_task_new (self, cancellable, callback, user_data);
   g_task_set_source_tag (task, cm_client_join_room_async);
-  uri = g_strconcat ("/_matrix/client/r0/join/", id_or_alias, NULL);
+  uri = g_strconcat ("/_matrix/client/v3/join/", id_or_alias, NULL);
   cm_net_send_data_async (self->cm_net, 2, NULL, 0,
                           uri, SOUP_METHOD_POST, NULL,
                           cancellable,
@@ -1973,7 +1982,7 @@ client_password_login_cb (GObject      *obj,
       return;
     }
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-login */
+  /* https://spec.matrix.org/v1.1/client-server-api/#post_matrixclientv3login */
   value = cm_utils_json_object_get_string (root, "user_id");
   self->is_logging_in = FALSE;
   cm_client_set_user_id (self, value);
@@ -1986,8 +1995,14 @@ client_password_login_cb (GObject      *obj,
   cm_set_string_value (&self->device_id, value);
 
   object = cm_utils_json_object_get_object (root, "well_known");
-  object = cm_utils_json_object_get_object (object, "m.homeserver");
-  value = cm_utils_json_object_get_string (object, "base_url");
+  if (object) { /* well_known is optional in the response */
+    const char *homeserver;
+
+    object = cm_utils_json_object_get_object (object, "m.homeserver");
+    homeserver = cm_utils_json_object_get_string (object, "base_url");
+    cm_client_set_homeserver (self, homeserver);
+  }
+
   g_clear_object (&self->cm_enc);
   self->cm_enc = cm_enc_new (self->cm_db, NULL, NULL);
   cm_enc_set_details (self->cm_enc,
@@ -1995,7 +2010,6 @@ client_password_login_cb (GObject      *obj,
                       cm_client_get_device_id (self));
   cm_set_string_value (&self->key, cm_enc_get_device_keys_json (self->cm_enc));
   self->is_logging_in = FALSE;
-  cm_client_set_homeserver (self, value);
   client_set_login_state (self, FALSE, !!cm_net_get_access_token (self->cm_net));
   client_mark_for_save (self, TRUE, TRUE);
   cm_client_save (self);
@@ -2131,7 +2145,7 @@ matrix_upload_key (CmClient *self)
 
   g_debug ("(%p) Upload key", self);
   cm_net_send_data_async (self->cm_net, 2, key, strlen (key),
-                          "/_matrix/client/r0/keys/upload", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/keys/upload", SOUP_METHOD_POST,
                           NULL, self->cancellable, upload_key_cb,
                           g_object_ref (self));
 }
@@ -2326,7 +2340,7 @@ handle_to_device (CmClient   *self,
                   reply_event = cm_olm_sas_get_key_event (olm_sas);
 
                   obj = cm_event_get_json (reply_event);
-                  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.key/%s",
+                  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.key/%s",
                                          cm_event_get_txn_id (reply_event));
                   cm_net_send_json_async (self->cm_net, 0, obj, uri, SOUP_METHOD_PUT,
                                           NULL, NULL,
@@ -2588,8 +2602,8 @@ matrix_take_red_pill (CmClient *self,
                       gpointer  tsk)
 {
   g_autoptr(GTask) task = tsk;
+  g_autoptr (GHashTable) query = NULL;
   GCancellable *cancellable;
-  GHashTable *query;
 
   g_assert (CM_IS_CLIENT (self));
 
@@ -2607,7 +2621,7 @@ matrix_take_red_pill (CmClient *self,
 
   cancellable = g_task_get_cancellable (task);
   cm_net_send_json_async (self->cm_net, 2, NULL,
-                          "/_matrix/client/r0/sync", SOUP_METHOD_GET,
+                          "/_matrix/client/v3/sync", SOUP_METHOD_GET,
                           query, cancellable, matrix_take_red_pill_cb,
                           g_object_ref (self));
 }
@@ -2901,7 +2915,7 @@ matrix_start_sync (CmClient *self,
 
       self->direct_room_list_loading = TRUE;
 
-      uri = g_strconcat ("/_matrix/client/r0/user/",
+      uri = g_strconcat ("/_matrix/client/v3/user/",
                          cm_user_get_id (CM_USER (self->cm_account)),
                          "/account_data/m.direct", NULL);
       g_debug ("(%p) Get direct rooms", self);
@@ -2914,7 +2928,7 @@ matrix_start_sync (CmClient *self,
       self->room_list_loading = TRUE;
       g_debug ("(%p) Get joined rooms", self);
       cm_net_send_json_async (self->cm_net, 0, NULL,
-                              "/_matrix/client/r0/joined_rooms", SOUP_METHOD_GET,
+                              "/_matrix/client/v3/joined_rooms", SOUP_METHOD_GET,
                               NULL, NULL, get_joined_rooms_cb,
                               g_object_ref (self));
 
@@ -3298,7 +3312,7 @@ cm_client_get_pushers_async (CmClient              *self,
   g_task_set_source_tag (task, cm_client_get_pushers_async);
 
   cm_net_send_data_async (self->cm_net, 0, NULL, 0,
-                          "/_matrix/client/r0/pushers", SOUP_METHOD_GET,
+                          "/_matrix/client/v3/pushers", SOUP_METHOD_GET,
                           NULL, self->cancellable, get_pushers_cb,
                           g_steal_pointer (&task));
 }
@@ -3466,7 +3480,7 @@ cm_client_add_pusher_async (CmClient              *self,
   object = build_pusher_json (pusher);
 
   cm_net_send_json_async (self->cm_net, 0, object,
-                          "/_matrix/client/r0/pushers/set", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/pushers/set", SOUP_METHOD_POST,
                           NULL, self->cancellable, add_pusher_cb,
                           g_steal_pointer (&task));
 }
@@ -3608,10 +3622,10 @@ cm_client_remove_pusher_async (CmClient              *self,
 
   object = build_pusher_json (pusher);
   /* NULL means delete: */
-  json_object_set_string_member(object, "kind", NULL);
+  json_object_set_string_member (object, "kind", NULL);
 
   cm_net_send_json_async (self->cm_net, 0, object,
-                          "/_matrix/client/r0/pushers/set", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/pushers/set", SOUP_METHOD_POST,
                           NULL, self->cancellable, remove_pusher_cb,
                           g_steal_pointer (&task));
 }

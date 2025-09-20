@@ -39,7 +39,7 @@
 
 /*
  * Device key request (ie, loading all devices of user(s) from server):
- *   https://matrix.org/docs/spec/client_server/r0.6.1#tracking-the-device-list-for-a-user
+ *   https://spec.matrix.org/v1.15/client-server-api/#tracking-the-device-list-for-a-user
  *   - We keep track of all changed users in `changed_users` hash table
  *     - changed_users may not contain users that don't share any
  *       encrypted room.
@@ -280,7 +280,7 @@ request_device_keys_from_queue (CmUserList *self)
 
   g_debug ("(%p) Load user devices, users count: %u", users, users->len);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, object,
-                          "/_matrix/client/r0/keys/query", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/keys/query", SOUP_METHOD_POST,
                           NULL, cancellable, device_keys_query_cb, task);
 }
 
@@ -674,7 +674,7 @@ cm_user_list_claim_keys_async (CmUserList          *self,
       return;
     }
 
-  /* https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-keys-claim */
+  /* https://spec.matrix.org/v1.15/client-server-api/#post_matrixclientv3keysclaim */
   root = json_object_new ();
   json_object_set_int_member (root, "timeout", KEY_TIMEOUT);
   child = json_object_new ();
@@ -703,7 +703,7 @@ cm_user_list_claim_keys_async (CmUserList          *self,
   json_object_set_object_member (root, "one_time_keys", child);
 
   cm_net_send_json_async (cm_client_get_net (self->client), 0, root,
-                          "/_matrix/client/r0/keys/claim", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/keys/claim", SOUP_METHOD_POST,
                           NULL, NULL, claim_keys_cb,
                           g_steal_pointer (&task));
 }
@@ -808,7 +808,7 @@ cm_user_list_upload_keys_async (CmUserList          *self,
   event = cm_event_new (CM_M_UNKNOWN);
   cm_event_create_txn_id (event, cm_client_pop_event_id (self->client));
 
-  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.room.encrypted/%s",
+  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.room.encrypted/%s",
                          cm_event_get_txn_id (event));
   cm_net_send_json_async (cm_client_get_net (self->client),
                           0, root, uri, SOUP_METHOD_PUT,

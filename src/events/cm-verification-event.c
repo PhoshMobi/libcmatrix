@@ -58,7 +58,7 @@ verification_event_updated_cb (CmVerificationEvent *self)
       olm_sas = g_object_get_data (G_OBJECT (self), "olm-sas");
       reply_event = cm_olm_sas_get_accept_event (olm_sas);
       root = cm_event_get_json (reply_event);
-      uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.accept/%s",
+      uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.accept/%s",
                              cm_event_get_txn_id (reply_event));
       cm_net_send_json_async (cm_client_get_net (self->client),
                               0, root, uri, SOUP_METHOD_PUT,
@@ -215,7 +215,7 @@ cm_verification_event_cancel_async (CmVerificationEvent *self,
   reply_event = cm_olm_sas_get_cancel_event (olm_sas, cancel_code);
   root = cm_event_get_json (reply_event);
 
-  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.cancel/%s",
+  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.cancel/%s",
                          cm_event_get_txn_id (reply_event));
   cm_net_send_json_async (cm_client_get_net (self->client),
                           0, root, uri, SOUP_METHOD_PUT,
@@ -345,7 +345,7 @@ cm_verification_event_continue_async (CmVerificationEvent *self,
     {
       reply_event = cm_olm_sas_get_ready_event (olm_sas);
       root = cm_event_get_json (reply_event);
-      uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.ready/%s",
+      uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.ready/%s",
                              cm_event_get_txn_id (reply_event));
       cm_net_send_json_async (cm_client_get_net (self->client),
                               0, root, uri, SOUP_METHOD_PUT,
@@ -357,7 +357,7 @@ cm_verification_event_continue_async (CmVerificationEvent *self,
     {
       reply_event = cm_olm_sas_get_accept_event (olm_sas);
       root = cm_event_get_json (reply_event);
-      uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.accept/%s",
+      uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.accept/%s",
                              cm_event_get_txn_id (reply_event));
       cm_net_send_json_async (cm_client_get_net (self->client),
                               0, root, uri, SOUP_METHOD_PUT,
@@ -470,7 +470,7 @@ cm_verification_event_match_async (CmVerificationEvent *self,
 
   reply_event = cm_olm_sas_get_mac_event (olm_sas);
   root = cm_event_get_json (reply_event);
-  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.mac/%s",
+  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.mac/%s",
                          cm_event_get_txn_id (reply_event));
   cm_net_send_json_async (cm_client_get_net (self->client),
                           0, root, uri, SOUP_METHOD_PUT,
@@ -552,7 +552,7 @@ cm_verification_event_done_async (CmVerificationEvent *self,
   reply_event = cm_olm_sas_get_done_event (olm_sas);
   root = cm_event_get_json (reply_event);
 
-  uri = g_strdup_printf ("/_matrix/client/r0/sendToDevice/m.key.verification.done/%s",
+  uri = g_strdup_printf ("/_matrix/client/v3/sendToDevice/m.key.verification.done/%s",
                          cm_event_get_txn_id (reply_event));
   cm_net_send_json_async (cm_client_get_net (self->client),
                           0, root, uri, SOUP_METHOD_PUT,

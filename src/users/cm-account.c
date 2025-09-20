@@ -189,7 +189,7 @@ cm_account_set_display_name_async (CmAccount           *self,
   g_task_set_task_data (task, g_strdup (name), g_free);
 
   client = cm_user_get_client (CM_USER (self));
-  uri = g_strdup_printf ("/_matrix/client/r0/profile/%s/displayname",
+  uri = g_strdup_printf ("/_matrix/client/v3/profile/%s/displayname",
                          cm_client_get_user_id (client));
   cm_net_send_json_async (cm_client_get_net (client), 1,
                           root, uri, SOUP_METHOD_PUT,
@@ -266,7 +266,7 @@ cm_account_set_user_avatar_async (CmAccount           *self,
       const char *data;
 
       data = "{\"avatar_url\":\"\"}";
-      uri = g_strdup_printf ("/_matrix/client/r0/profile/%s/avatar_url",
+      uri = g_strdup_printf ("/_matrix/client/v3/profile/%s/avatar_url",
                              cm_client_get_user_id (client));
       cm_net_send_data_async (cm_net, 2, g_strdup (data), strlen (data),
                               uri, SOUP_METHOD_PUT, NULL, cancellable,
@@ -379,7 +379,7 @@ cm_account_get_3pids_async (CmAccount           *self,
   g_debug ("Getting 3pid of user '%s'", user_id);
 
   cm_net_send_json_async (cm_client_get_net (client), 1, NULL,
-                          "/_matrix/client/r0/account/3pid", SOUP_METHOD_GET,
+                          "/_matrix/client/v3/account/3pid", SOUP_METHOD_GET,
                           NULL, cancellable, account_get_3pid_cb,
                           g_steal_pointer (&task));
 }
@@ -472,7 +472,7 @@ cm_account_delete_3pid_async (CmAccount           *self,
 
   client = cm_user_get_client (CM_USER (self));
   cm_net_send_json_async (cm_client_get_net (client), 2, root,
-                          "/_matrix/client/r0/account/3pid/delete", SOUP_METHOD_POST,
+                          "/_matrix/client/v3/account/3pid/delete", SOUP_METHOD_POST,
                           NULL, cancellable, account_delete_3pid_cb, task);
 }
 

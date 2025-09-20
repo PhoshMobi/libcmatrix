@@ -538,6 +538,7 @@ cm_net_get_file_async (CmNet                 *self,
                          "/_matrix/client/v1/media/download/", file_url, NULL);
       needs_auth = TRUE;
     } else {
+      /* XXX this endpoint is deprecated */
       url = g_strconcat (self->homeserver,
                          "/_matrix/media/r0/download/", file_url, NULL);
     }
@@ -663,7 +664,7 @@ cm_net_put_file_async (CmNet                 *self,
   g_hash_table_replace (query, g_strdup ("filename"), g_file_get_basename (file));
   g_hash_table_replace (query, g_strdup ("access_token"), g_strdup (self->access_token));
 
-  url = g_strconcat (self->homeserver, "/_matrix/media/r0/upload", NULL);
+  url = g_strconcat (self->homeserver, "/_matrix/media/v3/upload", NULL);
   msg = soup_message_new (SOUP_METHOD_POST, url);
 
   soup_message_set_uri (msg, soup_uri_copy (soup_message_get_uri (msg), SOUP_URI_QUERY,

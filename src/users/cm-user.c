@@ -543,7 +543,7 @@ cm_user_load_info_async (CmUser              *self,
     }
 
   priv->info_loading = TRUE;
-  uri = g_strdup_printf ("/_matrix/client/r0/profile/%s", priv->user_id);
+  uri = g_strdup_printf ("/_matrix/client/v3/profile/%s", priv->user_id);
   cm_net_send_json_async (cm_client_get_net (priv->cm_client),
                           1, NULL, uri, SOUP_METHOD_GET,
                           NULL, cancellable, user_get_user_info_cb,
