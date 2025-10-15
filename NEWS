@@ -1,3 +1,16 @@
+libcmatrix 0.0.4
+----------------
+Released October 2025
+* Tracks room creation events so the room version can be determined
+* Bump API endpoints to v3
+* Some leak fixes and internal cleanups
+* Issues fixed:
+    * https://source.puri.sm/Librem5/libcmatrix/-/issues/56
+    * https://source.puri.sm/Librem5/libcmatrix/-/issues/22
+* Contributors:
+    * Evangelos Ribeiro Tzaras
+    * Guido Günther
+
 libcmatrix 0.0.3
 ----------------
 Released February 2025
