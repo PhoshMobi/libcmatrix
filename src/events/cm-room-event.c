@@ -283,45 +283,6 @@ cm_room_event_get_room_member_json (CmRoomEvent  *self,
   return child;
 }
 
-void
-cm_room_event_set_room_member (CmRoomEvent *self,
-                               CmUser      *user)
-{
-  CmRoomEventPrivate *priv = cm_room_event_get_instance_private (self);
-  const char *user_id;
-
-  g_return_if_fail (CM_IS_ROOM_EVENT (self));
-  g_return_if_fail (CM_IS_USER (user));
-  g_return_if_fail (!priv->users);
-  ret_if_fail (self, CM_M_ROOM_MEMBER);
-
-  cm_room_event_get_room_member_json (self, &user_id);
-  g_return_if_fail (g_strcmp0 (cm_user_get_id (user), user_id) == 0);
-
-  priv->users = g_ptr_array_new_full (1, g_object_unref);
-  g_ptr_array_add (priv->users, g_object_ref (user));
-}
-
-/**
- * cm_room_event_get_room_member:
- * @self: The room event
- *
- * Get the room member of this room event
- *
- * Returns:(transfer none):The room member
- */
-CmUser *
-cm_room_event_get_room_member (CmRoomEvent *self)
-{
-  CmRoomEventPrivate *priv = cm_room_event_get_instance_private (self);
-
-  g_return_val_if_fail (CM_IS_ROOM_EVENT (self), NULL);
-  ret_val_if_fail (self, CM_M_ROOM_MEMBER, 0, NULL);
-  g_return_val_if_fail (priv->users, NULL);
-
-  return priv->users->pdata[0];
-}
-
 GRefString *
 cm_room_event_get_room_member_id (CmRoomEvent *self)
 {

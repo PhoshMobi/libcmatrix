@@ -32,7 +32,6 @@ struct _CmRoomEventClass
 };
 
 CmRoom     *cm_room_event_get_room         (CmRoomEvent *self);
-CmUser     *cm_room_event_get_room_member  (CmRoomEvent *self);
 const char *cm_room_event_get_room_version (CmRoomEvent *self);
 
 G_END_DECLS

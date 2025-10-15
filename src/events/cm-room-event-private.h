@@ -24,8 +24,6 @@ const char   *cm_room_event_get_room_name           (CmRoomEvent         *self);
 const char   *cm_room_event_get_encryption          (CmRoomEvent         *self);
 JsonObject   *cm_room_event_get_room_member_json    (CmRoomEvent         *self,
                                                      const char         **user_id);
-void          cm_room_event_set_room_member         (CmRoomEvent         *self,
-                                                     CmUser              *user);
 GRefString   *cm_room_event_get_room_member_id      (CmRoomEvent         *self);
 gboolean      cm_room_event_user_has_power          (CmRoomEvent         *self,
                                                      const char          *user_id,

@@ -12,7 +12,6 @@
 #include "cm-config.h"
 
 #include "cm-utils-private.h"
-#include "cm-common.h"
 #include "cm-matrix-private.h"
 #include "cm-enums.h"
 #include "cm-client-private.h"
@@ -31,7 +30,7 @@ struct _CmRoomMessageEvent
   char           *body;
   char           *file_path;    /* Local path to which file is saved */
   GFile          *file;
-  GInputStream   *file_istream;
+  GInputStream   *istream;
   char           *mxc_uri;
 
   gboolean       downloading_file;
@@ -63,7 +62,7 @@ room_message_generate_json (CmRoomMessageEvent *self,
 
       name = g_file_get_basename (file);
       json_object_set_string_member (root, "msgtype", "m.file");
-      json_object_set_string_member (root, "body", name);
+      json_object_set_string_member (root, "body", body ?: name);
       json_object_set_string_member (root, "filename", name);
       if (!cm_room_is_encrypted (room))
         {
@@ -211,7 +210,7 @@ cm_room_message_event_new_from_json (JsonObject *root)
   type = cm_utils_json_object_get_string (child, "msgtype");
   body = cm_utils_json_object_get_string (child, "body");
   self->body = g_strdup (body);
-  self->mxc_uri = g_strdup (cm_utils_json_object_get_string (child, "url"));
+  self->mxc_uri = cm_utils_json_object_dup_string (child, "url");
 
   if (g_strcmp0 (type, "m.text") == 0)
     self->type = CM_CONTENT_TYPE_TEXT;
@@ -263,7 +262,14 @@ cm_room_message_event_set_body (CmRoomMessageEvent *self,
                                 const char         *text)
 {
   g_return_if_fail (CM_IS_ROOM_MESSAGE_EVENT (self));
-  g_return_if_fail (self->type == CM_CONTENT_TYPE_TEXT);
+  g_return_if_fail (self->type == CM_CONTENT_TYPE_TEXT ||
+                    self->type == CM_CONTENT_TYPE_EMOTE ||
+                    self->type == CM_CONTENT_TYPE_NOTICE ||
+                    self->type == CM_CONTENT_TYPE_LOCATION ||
+                    self->type == CM_CONTENT_TYPE_FILE ||
+                    self->type == CM_CONTENT_TYPE_IMAGE ||
+                    self->type == CM_CONTENT_TYPE_VIDEO ||
+                    self->type == CM_CONTENT_TYPE_AUDIO);
 
   g_free (self->body);
   self->body = g_strdup (text);
@@ -287,8 +293,8 @@ cm_room_message_event_get_file_path (CmRoomMessageEvent *self)
 
 void
 cm_room_message_event_set_file (CmRoomMessageEvent *self,
-                                const char         *body,
-                                GFile              *file)
+                                GFile              *file,
+                                const char         *body)
 {
   g_return_if_fail (CM_IS_ROOM_MESSAGE_EVENT (self));
   g_return_if_fail (self->type == CM_CONTENT_TYPE_FILE);
@@ -335,10 +341,10 @@ message_file_stream_cb (GObject      *obj,
     g_task_return_pointer (task, NULL, NULL);
   else
     {
-      self->file_istream = (GInputStream *)g_file_read (out_file, NULL, NULL);
-      g_object_set_data_full (G_OBJECT (self->file_istream), "out-file",
+      self->istream = G_INPUT_STREAM (g_file_read (out_file, NULL, NULL));
+      g_object_set_data_full (G_OBJECT (self->istream), "out-file",
                               out_file, g_object_unref);
-      g_task_return_pointer (task, g_object_ref (self->file_istream), g_object_unref);
+      g_task_return_pointer (task, g_object_ref (self->istream), g_object_unref);
     }
 }
 
@@ -385,12 +391,13 @@ cm_room_message_event_get_file_async (CmRoomMessageEvent    *self,
       return;
     }
 
-  if (self->file && !self->mxc_uri && !self->file_istream)
-    self->file_istream = (gpointer)g_file_read (self->file, NULL, NULL);
+  /* FIXME the following is not async */
+  if (self->file && !self->mxc_uri && !self->istream)
+    self->istream = G_INPUT_STREAM (g_file_read (self->file, NULL, NULL));
 
-  if (self->file_istream)
+  if (self->istream)
     {
-      g_task_return_pointer (task, g_object_ref (self->file_istream), g_object_unref);
+      g_task_return_pointer (task, g_object_ref (self->istream), g_object_unref);
       return;
     }
 

@@ -24,8 +24,8 @@ CmRoomEvent        *cm_room_message_event_new_from_json (JsonObject         *roo
 void                cm_room_message_event_set_body      (CmRoomMessageEvent *self,
                                                          const char         *text);
 void                cm_room_message_event_set_file      (CmRoomMessageEvent *self,
-                                                         const char         *body,
-                                                         GFile              *file);
+                                                         GFile              *file,
+                                                         const char         *body);
 GFile              *cm_room_message_event_get_file      (CmRoomMessageEvent *self);
 
 
