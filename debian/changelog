@@ -1,8 +1,157 @@
-libcmatrix (0.0.4~dev) UNRELEASED; urgency=medium
+libcmatrix (0.0.4) experimental; urgency=medium
 
-  * UNRELEASED
+  [ Evangelos Ribeiro Tzaras ]
+  * room: Use more suitable error code for pending operation.
+    This allows clients to not succumb to panic.
+  * room: Don't leak task in early return case
+  * room: Ensure list of joined members is current when getting member list.
+    When `cm_room_get_joined_members()` is called, the callee has
+    a (reasonable) expectation that the list of room members is complete.
+    Ensure it is complete by querying the server with
+    `cm_load_joined_members_*()`.
+    `cm_load_joined_members_*()` was only called for encrypted chats
+    in `ensure_encryption()` leaving unencrypted chats with incomplete
+    room members.
+    The codepath in `ensure_encryption()` is left unchanged as it
+    - always needs the member list to fetch device keys
+    - checks whether the member list is loaded/loading already
+      (so we're not wasting cycles on a pending/completed member loading
+       due to the newly introduced callsite)
+    Fixes: https://source.puri.sm/Librem5/libcmatrix/-/issues/56
+  * matrix: Remove unused code
+    "force-save" has been completely removed in
+    68caa3d47af82d32d621c0d7d8223a3ae6fcadb
+    so it's safe to remove now.
+  * event: Remove unused symbols from header
+  * net: Add comment about deprecated r0 download endpoint
+  * client: Small doc improvements
+  * client: Fix memory leak
+  * client: Add debugging output when setting device id.
+    This may help in those rare cases when chatty/libcmatrix
+    "forgets" its' identity.
+  * client: Guard against setting empty device ID
+  * client: Reuse device id for login if available.
+    When a device id is already set, we should use it in the login flow.
+  * client: Don't rely on well_known in response to login.
+    The client configuration provided through the `well_known`
+    field is optional.
+    If it is omitted, assume the set homeserver is fine.
+  * Matrix API bumps to v3:
+    Since Matrix spec version v1.1 (released November 2021)
+    all API endpoints have been reversioned to v3 as per
+    https://github.com/matrix-org/matrix-doc/pull/2844
+  * client: Bump login API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /login endpoint up until Matrix spec v1.13.
+  * client: Bump sync API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /sync endpoint up until Matrix spec v1.13.
+  * client: Bump joined_rooms API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /joined_rooms endpoint up until Matrix spec v1.13.
+  * client: Bump filter API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /user/{userId}/filter endpoint up until Matrix spec v1.13.
+  * client: Bump pushers API endpoints to v3.
+    There are no changes relevant for our codebase
+    to the /pushers endpoints up until Matrix spec v1.13.
+  * client: Bump user account_data API endpoints to v3.
+    There are no changes relevant for our codebase
+    to the /user/{userId}/account_data endpoints up until Matrix spec v1.13.
+  * client: Bump join API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /join endpoint up until Matrix spec v1.14.
+  * user: Bump profile API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /profile endpoint up until Matrix spec v1.14.
+  * account: Bump profile API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /profile endpoints up until Matrix spec v1.14.
+  * room: Bump typing API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /typing endpoint up until Matrix spec v1.14.
+  * account: Bump 3pid API endpoints to v3.
+    There are no changes relevant for our codebase
+    to the /account/3pid endpoints up until Matrix spec v1.14.
+  * client: Bump client key upload API endpoints to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * tree: Bump sendToDevice user verification API endpoints to v3.
+    There are no changes relevant for our codebase
+    to the /client/v3/sendToDevice endpoints for user verification
+    up until Matrix spec v1.15.
+  * user-list: Bump sendToDevice upload API endpoints to v3 for uploading keys.
+    There are no changes relevant for our codebase
+    to the /client/sendToDevice endpoints up until Matrix spec v1.15.
+  * net: Bump media upload API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * user-list: Bump key query and claim API endpoints to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump room state API endpoint to v3 for enabling encryption.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump API endpoint to v3 for leaving rooms.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump room state API endpoint to v3 for initial sync.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump room messages API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump joined_members API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump retrieving room event API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room: Bump read marker API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+  * room-message-event: Bump room send API endpoint to v3.
+    There are no changes relevant for our codebase
+    to the /client/keys/upload endpoints up until Matrix spec v1.15.
+    Closes: https://source.puri.sm/Librem5/libcmatrix/-/issues/22
+  * room-event: Remove unused and confusing API
+    cm_room_event_set_room_member() does not get called ever.
+    cm_room_event_get_room_member() is not used by any known consumers
+    of libcmatrix, so drop it.
+  * room: Set source tags on all tasks
+  * utils: Mark file path for cm_utils_save_url_to_path as const char *
+    And adapt to changes in the tree.
+  * room-message-event: Rename struct member to istream (from file_istream)
+    The stream will soon no longer be tied to files.
+  * room-message-event: Change order of arguments in private set_file API.
+    A setter should have the thing to be set before any auxiliary arguments.
+  * room-message-event: Allow body to be set for more types.
+    Clients can use the body as a fallback when e.g. downloading fails.
+  * net: Don't try parsing invalid data.
+    Abort early instead.
+  * net: Actually pass progress callback and data along.
+    Otherwise we fail the assertion in wrote_body_data_cb().
+  * net: Don't assert there has not been an error
+    read_stream_cb() may have it's task return an error
+    if the data fails a quick sanity check
+    or it may fail later when parse_from_data() is running.
+    We don't want to crash in these instances.
+  * room-message-event: Use explicity set body for generated json.
+    The body might e.g. be a caption for a image.
 
- -- Evangelos Ribeiro Tzaras <devrtz@fortysixandtwo.eu>  Sat, 22 Feb 2025 08:12:37 +0100
+  [ Guido Günther ]
+  * event-list: Fix event type.
+    Fixes: 48e0b1d ("Add cm-room-event-list")
+  * event-list: Fix alphabetic ordering.
+    Fixes: f8fb57c ("event-list: Sort event members alphabetically")
+  * enums: Add some orientation.
+    Often ones just has the enum values, this makes it easier
+    to look up the actual event type.
+  * room-event: Track room version
+  * room: Allow to get room version
+  * event-list: Track room create event
+
+ -- Evangelos Ribeiro Tzaras <devrtz@fortysixandtwo.eu>  Wed, 15 Oct 2025 18:56:38 +0200
 
 libcmatrix (0.0.3) experimental; urgency=medium
 
