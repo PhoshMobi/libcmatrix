@@ -1205,8 +1205,8 @@ cm_utils_get_homeserver_sync (const char *username,
 
   g_return_val_if_fail (username && *username, NULL);
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmUtilsSyncData) {
     .loop = loop,
