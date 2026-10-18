@@ -1786,8 +1786,8 @@ cm_client_join_room_sync (CmClient   *self,
 
   g_return_val_if_fail (CM_IS_CLIENT (self), FALSE);
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmClientSyncData) {
     .loop = loop,
@@ -3380,8 +3380,8 @@ cm_client_get_pushers_sync (CmClient              *self,
   g_autoptr (GMainContext) context = g_main_context_new ();
   g_autoptr (GMainLoop) loop = NULL;
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmClientSyncData) {
     .loop = loop,
@@ -3548,8 +3548,8 @@ cm_client_add_pusher_sync (CmClient              *self,
   g_autoptr (GMainContext) context = g_main_context_new ();
   g_autoptr (GMainLoop) loop = NULL;
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmClientSyncData) {
     .loop = loop,
@@ -3693,8 +3693,8 @@ cm_client_remove_pusher_sync (CmClient              *self,
   g_autoptr (GMainContext) context = g_main_context_new ();
   g_autoptr (GMainLoop) loop = NULL;
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmClientSyncData) {
     .loop = loop,

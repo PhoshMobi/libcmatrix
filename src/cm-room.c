@@ -2568,8 +2568,8 @@ cm_room_load_past_events_sync (CmRoom        *self,
   g_autoptr (GMainLoop) loop = NULL;
   gboolean success;
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmRoomSyncData) {
     .loop = loop,
@@ -3095,8 +3095,8 @@ cm_room_get_event_sync (CmRoom        *self,
   g_autoptr (GMainContext) context = g_main_context_new ();
   g_autoptr (GMainLoop) loop = NULL;
 
-  g_main_context_push_thread_default (context);
   loop = g_main_loop_new (context, FALSE);
+  g_main_context_push_thread_default (context);
 
   data = (CmRoomSyncData) {
     .loop = loop,
