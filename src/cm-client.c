@@ -1,6 +1,7 @@
 /* cm-client.c
  *
  * Copyright 2022 Purism SPC
+ *           2024-2026 Phosh.mobi e.V.
  *
  * Author(s):
  *   Mohammed Sadiq <sadiq@sadiqpk.org>
@@ -25,6 +26,7 @@
 #include "cm-olm-sas-private.h"
 #include "cm-enc-private.h"
 #include "cm-enums.h"
+#include "cm-enum-types.h"
 #include "events/cm-event-private.h"
 #include "events/cm-verification-event.h"
 #include "events/cm-verification-event-private.h"
@@ -112,8 +114,20 @@ struct _CmClient
   gboolean        is_logging_in;
   /* Set if passsword is right/success using @access_token */
   gboolean        login_success;
+
+  /* /sync handling */
   gboolean        is_sync;
   gboolean        sync_failed;
+  struct {
+    CmSyncMode    mode;
+    /* A /sync request is on the wire */
+    gboolean      in_flight;
+    struct {
+      GPtrArray  *queued;  /* element-type: GTask */
+      GPtrArray  *running; /* element-type: GTask */
+    } oneshot;
+  } sync;
+
   gboolean        is_self_change;
   gboolean        save_client_pending;
   gboolean        save_secret_pending;
@@ -155,7 +169,19 @@ static void     matrix_start_sync      (CmClient *self,
                                         gpointer  tsk);
 static void     matrix_upload_key      (CmClient *self);
 static gboolean handle_matrix_glitches (CmClient *self,
-                                        GError    *error);
+                                        GError   *error);
+
+/* If we should sync again, do so */
+static void
+maybe_sync_next (CmClient *self)
+{
+  g_assert (CM_IS_CLIENT (self));
+
+  if (self->sync.mode == CM_SYNC_MODE_CONTINUOUS ||
+      self->sync.oneshot.queued->len)
+    matrix_start_sync (self, NULL);
+}
+
 
 static void
 cm_set_string_value (char       **strp,
@@ -542,6 +568,9 @@ cm_client_finalize (GObject *object)
     g_cancellable_cancel (self->cancellable);
   g_clear_object (&self->cancellable);
 
+  g_clear_pointer (&self->sync.oneshot.queued, g_ptr_array_unref);
+  g_clear_pointer (&self->sync.oneshot.running, g_ptr_array_unref);
+
   g_clear_object (&self->cm_account);
   g_clear_object (&self->cm_net);
   g_clear_object (&self->user_list);
@@ -613,6 +642,8 @@ cm_client_init (CmClient *self)
   self->key_verifications = g_list_store_new (CM_TYPE_VERIFICATION_EVENT);
   self->direct_rooms = g_hash_table_new_full (g_str_hash, g_str_equal,
                                               g_free, g_object_unref);
+  self->sync.oneshot.queued = g_ptr_array_new_with_free_func (g_object_unref);
+  self->sync.oneshot.running = g_ptr_array_new_with_free_func (g_object_unref);
 }
 
 /**
@@ -2127,7 +2158,7 @@ upload_key_cb (GObject      *obj,
 
   object = cm_utils_json_object_get_object (root, "one_time_key_counts");
   if (!handle_one_time_keys (self, object))
-    matrix_start_sync (self, NULL);
+    maybe_sync_next (self);
 }
 
 static void
@@ -2538,6 +2569,29 @@ handle_red_pill (CmClient   *self,
   handle_room_invite (self, cm_utils_json_object_get_object (object, "invite"));
 }
 
+/* Finish all one-shot syncs that were attached to the request that just ended */
+static void
+client_sync_once_complete (CmClient *self, GError *error)
+{
+  g_autoptr (GPtrArray) tasks = NULL;
+
+  if (!self->sync.oneshot.running->len)
+    return;
+
+  tasks = g_steal_pointer (&self->sync.oneshot.running);
+  self->sync.oneshot.running = g_ptr_array_new_with_free_func (g_object_unref);
+
+  for (guint i = 0; i < tasks->len; i++) {
+    GTask *task = g_ptr_array_index (tasks, i);
+
+    if (error)
+      g_task_return_error (task, g_error_copy (error));
+    else
+      g_task_return_boolean (task, TRUE);
+  }
+}
+
+
 static void
 matrix_take_red_pill_cb (GObject      *obj,
                          GAsyncResult *result,
@@ -2553,10 +2607,13 @@ matrix_take_red_pill_cb (GObject      *obj,
 
   root = g_task_propagate_pointer (G_TASK (result), &error);
 
+  self->sync.in_flight = FALSE;
+
   if (error)
     {
       self->sync_failed = TRUE;
       client_set_login_state (self, FALSE, FALSE);
+      client_sync_once_complete (self, error);
       if (!handle_matrix_glitches (self, error))
         self->callback (self, NULL, NULL, error, self->cb_data);
       else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -2586,12 +2643,15 @@ matrix_take_red_pill_cb (GObject      *obj,
       }
   }
 
+  /* Whoever asked for this sync now has what the server had for us */
+  client_sync_once_complete (self, NULL);
+
   object = cm_utils_json_object_get_object (root, "device_one_time_keys_count");
   if (handle_one_time_keys (self, object))
     return;
 
-  /* Repeat */
-  matrix_start_sync (self, NULL);
+  /* Repeat unless suspended */
+  maybe_sync_next (self);
 }
 
 static void
@@ -2605,7 +2665,18 @@ matrix_take_red_pill (CmClient *self,
   g_assert (CM_IS_CLIENT (self));
 
   query = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  if (self->login_success)
+
+  /* Requests queued by cm_client_sync_once_async() ride on this request */
+  while (self->sync.oneshot.queued->len) {
+    g_ptr_array_add (self->sync.oneshot.running,
+                     g_ptr_array_steal_index (self->sync.oneshot.queued, 0));
+  }
+  self->sync.in_flight = TRUE;
+
+  if (self->sync.oneshot.running->len || self->sync.mode == CM_SYNC_MODE_MANUAL)
+    /* Just fetch what's there, don't long poll */
+    g_hash_table_insert (query, g_strdup ("timeout"), g_strdup ("0"));
+  else if (self->login_success)
     g_hash_table_insert (query, g_strdup ("timeout"), g_strdup_printf ("%u", SYNC_TIMEOUT));
   else
     g_hash_table_insert (query, g_strdup ("timeout"), g_strdup_printf ("%u", SYNC_TIMEOUT / 1000));
@@ -3013,14 +3084,211 @@ cm_client_start_sync (CmClient *self)
 }
 
 /**
+ * cm_client_set_sync_mode:
+ * @self: A #CmClient
+ * @mode: The [enum@SyncMode]
+ *
+ * Set how events are synced from the server. See [enum@SyncMode]
+ * for details.
+ *
+ * Since: 0.0.5
+ */
+void
+cm_client_set_sync_mode (CmClient *self, CmSyncMode mode)
+{
+  g_autofree char *modestr = NULL;
+
+  g_return_if_fail (CM_IS_CLIENT (self));
+
+  if (self->sync.mode == mode)
+    return;
+
+  modestr = g_enum_to_string (CM_TYPE_SYNC_MODE, mode);
+  g_debug ("(%p) %s sync", self, modestr);
+  self->sync.mode = mode;
+
+  switch (self->sync.mode) {
+  case CM_SYNC_MODE_CONTINUOUS:
+    /* Trigger sync if not already running */
+    if (self->is_sync && !self->sync.in_flight &&
+        !self->is_logging_in && !self->resync_id)
+      matrix_start_sync (self, NULL);
+    break;
+  case CM_SYNC_MODE_MANUAL:
+    /* Sync suspended, don't trigger any sync */
+    return;
+  default:
+    g_assert_not_reached ();
+  }
+}
+
+/**
+ * cm_client_get_sync_mode:
+ * @self: A #CmClient
+ *
+ * Get the current sync mode.
+ *
+ * Returns: The sync mode
+ *
+ * Since: 0.0.5
+ */
+CmSyncMode
+cm_client_get_sync_mode (CmClient *self)
+{
+  g_return_val_if_fail (CM_IS_CLIENT (self), CM_SYNC_MODE_CONTINUOUS);
+
+  return self->sync.mode;
+}
+
+/**
+ * cm_client_sync_once_async:
+ * @self: A #CmClient
+ * @cancellable: (nullable): A `GCancellable`
+ * @callback: A `GAsyncReadyCallback`
+ * @user_data: The user data for @callback
+ *
+ * If continuous sync is off, make sure the events the server has for
+ * us at the time of the call have been fetched and handled (via the
+ * sync callback) before @callback is invoked by triggering a oneshot
+ * /sync.
+ *
+ * If continuous sync is running, the long-poll delivers these events
+ * eventually and we complete right away.
+ *
+ * Since: 0.0.5
+ */
+void
+cm_client_sync_once_async (CmClient            *self,
+                           GCancellable        *cancellable,
+                           GAsyncReadyCallback  callback,
+                           gpointer             user_data)
+{
+  g_autoptr(GTask) task = NULL;
+
+  g_return_if_fail (CM_IS_CLIENT (self));
+  g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+  task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_client_sync_once_async);
+
+  if (!self->client_enabled) {
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                             "Client not enabled");
+    return;
+  }
+
+  if (self->sync.mode == CM_SYNC_MODE_CONTINUOUS
+      && self->is_sync && !self->sync_failed) {
+    g_task_return_boolean (task, TRUE);
+    return;
+  }
+
+  g_ptr_array_add (self->sync.oneshot.queued, g_steal_pointer (&task));
+
+  if (!self->sync.in_flight && !self->is_logging_in && !self->resync_id) {
+    g_debug ("Triggering once sync");
+    matrix_start_sync (self, NULL);
+  } else {
+    g_debug ("Sync in progress %d %d %d",
+             self->sync.in_flight,
+             self->is_logging_in,
+             self->resync_id);
+  }
+}
+
+/**
+ * cm_client_sync_once_finish:
+ * @self: A #CmClient
+ * @result: The `GAsyncResult`
+ * @error: Return location for a #GError
+ *
+ * Finishes [method@Client.sync_once_async].
+ *
+ * Returns: `TRUE` if the sync succeeded.
+ *
+ * Since: 0.0.5
+ */
+gboolean
+cm_client_sync_once_finish (CmClient      *self,
+                            GAsyncResult  *result,
+                            GError       **error)
+{
+  g_return_val_if_fail (CM_IS_CLIENT (self), FALSE);
+  g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_client_sync_once_async);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+
+static void
+cm_client_sync_once_sync_cb (GObject      *object,
+                             GAsyncResult *res,
+                             gpointer      user_data)
+{
+  CmClientSyncData *data = user_data;
+  data->res = g_object_ref (res);
+
+  g_main_loop_quit (data->loop);
+}
+
+/**
+ * cm_client_sync_once_sync:
+ * @self: The client
+ * @cancellable: A cancellable
+ * @error: The return location for a recoverable error.
+ *
+ * Returns: %TRUE if synced successfully, %FALSE otherwise.
+ *
+ * Since: 0.0.5
+ */
+gboolean
+cm_client_sync_once_sync (CmClient *self, GCancellable *cancellable, GError **err)
+{
+  g_autoptr (GMainContext) context = NULL;
+  g_autoptr (GMainLoop) loop = NULL;
+  CmClientSyncData data;
+  gboolean success;
+
+  /* Use the threads default context (which is hopefully what our
+   * /sync operation is on as the /sync's async task needs to be able
+   * to make progress */
+  context = g_main_context_ref_thread_default ();
+  g_return_val_if_fail (CM_IS_CLIENT (self), FALSE);
+
+  g_main_context_push_thread_default (context);
+  loop = g_main_loop_new (context, FALSE);
+
+  data = (CmClientSyncData) {
+    .loop = loop,
+    .res = NULL,
+  };
+
+  cm_client_sync_once_async (self,
+                             cancellable,
+                             cm_client_sync_once_sync_cb,
+                             &data);
+  g_main_loop_run (data.loop);
+
+  success = cm_client_sync_once_finish (self, data.res, err);
+
+  if (data.res)
+    g_object_unref (data.res);
+
+  return success;
+}
+
+/**
  * cm_client_is_sync:
  * @self: A #CmClient
  *
- * Check whether the client @self is in
- * sync with the server or not.
+ * Check whether the client @self is "in sync" with the server.
+ * Note that "in sync" means that the client is logged in and
+ * processed `/sync` without failure. It doesn't meant that all
+ * events were synced from the server. See [enum.SyncMode].
  *
- * Returns: %TRUE if in sync with server.
- * %FALSE otherwise.
+ * Returns: `TRUE` if in sync with server. `FALSE` otherwise.
  */
 gboolean
 cm_client_is_sync (CmClient *self)

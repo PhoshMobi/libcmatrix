@@ -105,6 +105,19 @@ gboolean      cm_client_can_connect                   (CmClient            *self
 void          cm_client_start_sync                    (CmClient            *self);
 gboolean      cm_client_is_sync                       (CmClient            *self);
 void          cm_client_stop_sync                     (CmClient            *self);
+void          cm_client_set_sync_mode                 (CmClient            *self,
+                                                       CmSyncMode           mode);
+CmSyncMode    cm_client_get_sync_mode                 (CmClient            *self);
+void          cm_client_sync_once_async               (CmClient            *self,
+                                                       GCancellable        *cancellable,
+                                                       GAsyncReadyCallback  callback,
+                                                       gpointer             user_data);
+gboolean      cm_client_sync_once_finish              (CmClient            *self,
+                                                       GAsyncResult        *result,
+                                                       GError             **error);
+gboolean      cm_client_sync_once_sync                (CmClient            *self,
+                                                       GCancellable        *cancellable,
+                                                       GError             **error);
 gboolean      cm_client_get_logging_in                (CmClient            *self);
 gboolean      cm_client_get_logged_in                 (CmClient            *self);
 GListModel   *cm_client_get_joined_rooms              (CmClient            *self);
