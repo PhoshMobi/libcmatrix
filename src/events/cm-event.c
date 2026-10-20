@@ -95,8 +95,16 @@ event_parse_relations (CmEvent    *self,
   /* redaction */
   type = cm_utils_json_object_get_string (root, "type");
   if (g_strcmp0 (event_type_string (CM_M_ROOM_REDACTION), type) == 0) {
+    /* Room versions < 11 have it at the top level */
     g_set_str (&priv->replaces_event_id,
                cm_utils_json_object_get_string (root, "redacts"));
+    if (priv->replaces_event_id)
+      return;
+
+    /* room version >= 11 */
+    child = cm_utils_json_object_get_object (root, "content");
+    g_set_str (&priv->replaces_event_id,
+               cm_utils_json_object_get_string (child, "redacts"));
   }
 }
 

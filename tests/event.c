@@ -39,6 +39,19 @@ test_event_redaction_top_level (void)
 
 
 static void
+test_event_redaction_in_content (void)
+{
+  /* Room version 11 and later, see MSC2174 */
+  g_autoptr (JsonObject) root = parse ("{"
+                                       "\"type\": \"m.room.redaction\","
+                                       "\"event_id\": \"$r\","
+                                       "\"content\": {\"redacts\": \"$target\"}}");
+  g_autoptr (CmEvent) event = cm_event_new_from_json (root, NULL);
+
+  g_assert_cmpstr (cm_event_get_replaces_id (event), ==, "$target");
+}
+
+static void
 test_event_replace_encrypted (void)
 {
   /* related_to can show up in inner and outer */
@@ -61,6 +74,7 @@ main (int argc, char *argv[])
   g_test_init (&argc, &argv, NULL);
 
   g_test_add_func ("/event/redaction/top-level", test_event_redaction_top_level);
+  g_test_add_func ("/event/redaction/in-content", test_event_redaction_in_content);
   g_test_add_func ("/event/replace/encrypted", test_event_replace_encrypted);
 
   return g_test_run ();
