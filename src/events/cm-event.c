@@ -68,33 +68,36 @@ event_parse_relations (CmEvent    *self,
   child = cm_utils_json_object_get_object (root, "content");
   child = cm_utils_json_object_get_object (child, "m.relates_to");
 
+  /* m.replace */
   type = cm_utils_json_object_get_string (child, "rel_type");
   value = cm_utils_json_object_get_string (child, "event_id");
-
   if (g_strcmp0 (type, "m.replace") == 0)
-    priv->replaces_event_id = g_strdup (value);
+    g_set_str (&priv->replaces_event_id, value);
+  if (priv->replaces_event_id)
+    return;
 
-  if (!priv->replaces_event_id)
-    {
-      child = cm_utils_json_object_get_object (root, "unsigned");
-      priv->replaces_event_id = g_strdup (cm_utils_json_object_get_string (child, "replaces_state"));
-    }
+  /* state event replacement */
+  child = cm_utils_json_object_get_object (root, "unsigned");
+  g_set_str (&priv->replaces_event_id,
+             cm_utils_json_object_get_string (child, "replaces_state"));
+  if (priv->replaces_event_id)
+    return;
 
-  if (!priv->replaces_event_id)
-    {
-      child = cm_utils_json_object_get_object (root, "unsigned");
-      child = cm_utils_json_object_get_object (child, "m.relations");
-      child = cm_utils_json_object_get_object (child, "m.replace");
-      priv->replaces_event_id = g_strdup (cm_utils_json_object_get_string (child, "event_id"));
-    }
+  /* replacement bundled with new message */
+  child = cm_utils_json_object_get_object (root, "unsigned");
+  child = cm_utils_json_object_get_object (child, "m.relations");
+  child = cm_utils_json_object_get_object (child, "m.replace");
+  g_set_str (&priv->replaces_event_id,
+             cm_utils_json_object_get_string (child, "event_id"));
+  if (priv->replaces_event_id)
+    return;
 
-  if (!priv->replaces_event_id)
-    {
-      type = cm_utils_json_object_get_string (root, "type");
-
-      if (g_strcmp0 (event_type_string (CM_M_ROOM_REDACTION), type) == 0)
-        priv->replaces_event_id = cm_utils_json_object_dup_string (root, "redacts");
-    }
+  /* redaction */
+  type = cm_utils_json_object_get_string (root, "type");
+  if (g_strcmp0 (event_type_string (CM_M_ROOM_REDACTION), type) == 0) {
+    g_set_str (&priv->replaces_event_id,
+               cm_utils_json_object_get_string (root, "redacts"));
+  }
 }
 
 static gpointer
