@@ -1944,7 +1944,11 @@ send_typing_cb (GObject      *obj,
       self->typing = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "was-typing"));
       self->typing_set_time = GPOINTER_TO_SIZE (g_object_get_data (G_OBJECT (task), "was-typing-time"));
       g_debug ("(%p) Set typing error: %s", self, error->message);
+      g_task_return_error (task, g_steal_pointer (&error));
+      return;
     }
+
+  g_task_return_boolean (task, TRUE);
 }
 
 /**
