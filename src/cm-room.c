@@ -1967,7 +1967,7 @@ cm_room_set_typing_notice_async (CmRoom              *self,
 {
   g_autofree char *uri = NULL;
   JsonObject *object;
-  GTask *task;
+  g_autoptr (GTask) task = NULL;
 
   g_return_if_fail (CM_IS_ROOM (self));
 
@@ -1998,7 +1998,10 @@ cm_room_set_typing_notice_async (CmRoom              *self,
 
   cm_net_send_json_async (cm_client_get_net (self->client), 0, object,
                           uri, SOUP_METHOD_PUT,
-                          NULL, cancellable, send_typing_cb, task);
+                          NULL,
+                          cancellable,
+                          send_typing_cb,
+                          g_steal_pointer (&task));
 }
 
 /**
@@ -2081,7 +2084,7 @@ cm_room_enable_encryption_async (CmRoom              *self,
 {
     g_autofree char *uri = NULL;
     JsonObject *object;
-    GTask *task;
+    g_autoptr (GTask) task = NULL;
 
     g_return_if_fail (CM_IS_ROOM (self));
 
@@ -2100,7 +2103,10 @@ cm_room_enable_encryption_async (CmRoom              *self,
     json_object_set_string_member (object, "algorithm", ALGORITHM_MEGOLM);
     uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/state/m.room.encryption", NULL);
     cm_net_send_json_async (cm_client_get_net (self->client), 2, object, uri, SOUP_METHOD_PUT,
-                            NULL, cancellable, room_set_encryption_cb, task);
+                            NULL,
+                            cancellable,
+                            room_set_encryption_cb,
+                            g_steal_pointer (&task));
 }
 
 /**
@@ -2312,7 +2318,7 @@ cm_room_load_prev_batch_async (CmRoom              *self,
   g_autofree char *uri = NULL;
   const char *prev_batch;
   GHashTable *query;
-  GTask *task;
+  g_autoptr (GTask) task = NULL;
 
   g_return_if_fail (CM_IS_ROOM (self));
 
@@ -2344,7 +2350,10 @@ cm_room_load_prev_batch_async (CmRoom              *self,
   uri = g_strconcat ("/_matrix/client/v3/rooms/", self->room_id, "/messages", NULL);
   cm_net_send_json_async (cm_client_get_net (self->client), 0, NULL,
                           uri, SOUP_METHOD_GET,
-                          query, cancellable, room_load_prev_batch_cb, task);
+                          query,
+                          cancellable,
+                          room_load_prev_batch_cb,
+                          g_steal_pointer (&task));
 }
 
 GPtrArray *
