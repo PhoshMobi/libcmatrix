@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2022 Purism SPC
+ *               2024-2026 Phosh.mobi e.V.
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
@@ -467,6 +468,11 @@ cm_room_finalize (GObject *object)
 
   g_free (self->name);
   g_free (self->generated_name);
+  g_free (self->past_name);
+  g_free (self->encryption);
+  g_free (self->prev_batch);
+  g_clear_object (&self->avatar_file);
+  g_clear_pointer (&self->local_json, json_object_unref);
 
   g_queue_free_full (self->message_queue, g_object_unref);
 
@@ -548,7 +554,7 @@ cm_room_new (const char *room_id)
 /**
  * cm_room_new_from_json:
  * @room_id: room id string
- * @root: (nullable): A JsonObject with "local" object
+ * @root: (nullable) (transfer full): A JsonObject with "local" object
  * last_event: (nullable) (transfer full): A #CmEvent
  *
  * Create a new #CmRoom. @last_event is the
