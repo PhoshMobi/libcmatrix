@@ -1278,8 +1278,7 @@ cm_client_set_user_id (CmClient   *self,
                        const char *matrix_user_id)
 {
   g_autoptr(GString) str = NULL;
-  GRefString *new_user_id = NULL;
-  g_autofree char *user_id = NULL;
+  GRefString *user_id = NULL;
 
   g_return_val_if_fail (CM_IS_CLIENT (self), FALSE);
   g_return_val_if_fail (!self->is_logging_in, FALSE);
@@ -1298,10 +1297,8 @@ cm_client_set_user_id (CmClient   *self,
       return FALSE;
     }
 
-  user_id = g_ascii_strdown (matrix_user_id, -1);
-  new_user_id = g_ref_string_new_intern (user_id);
-
-  cm_user_set_user_id (CM_USER (self->cm_account), new_user_id);
+  user_id = g_ref_string_new_intern (matrix_user_id);
+  cm_user_set_user_id (CM_USER (self->cm_account), user_id);
   cm_user_list_set_account (self->user_list, self->cm_account);
 
   str = g_string_new (NULL);
