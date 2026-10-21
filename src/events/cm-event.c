@@ -35,6 +35,7 @@ typedef struct
   gint64         time_stamp;
   CmEventType    event_type;
   CmEventState   event_state;
+  gboolean       redacted;
 } CmEventPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (CmEvent, cm_event, G_TYPE_OBJECT)
@@ -238,6 +239,43 @@ cm_event_get_replaces_id (CmEvent *self)
   return priv->replaces_event_id;
 }
 
+/**
+ * cm_event_is_redacted:
+ * @self: A #CmEvent
+ *
+ * Check whether @self was redacted (deleted). The content of such
+ * events must not be shown. Connect to the #CmEvent::updated signal
+ * to get notified when an event gets redacted.
+ *
+ * Returns: %TRUE if the event was redacted, %FALSE otherwise.
+ *
+ * Since: 0.0.5
+ */
+gboolean
+cm_event_is_redacted (CmEvent *self)
+{
+  CmEventPrivate *priv = cm_event_get_instance_private (self);
+
+  g_return_val_if_fail (CM_IS_EVENT (self), FALSE);
+
+  return priv->redacted;
+}
+
+void
+cm_event_set_redacted (CmEvent *self)
+{
+  CmEventPrivate *priv = cm_event_get_instance_private (self);
+
+  g_return_if_fail (CM_IS_EVENT (self));
+
+  if (priv->redacted)
+    return;
+
+  priv->redacted = TRUE;
+  g_signal_emit (self, signals[UPDATED], 0);
+}
+
+
 const char *
 cm_event_get_reply_to_id (CmEvent *self)
 {
@@ -409,6 +447,10 @@ cm_event_set_json (CmEvent    *self,
     priv->sender_id = g_ref_string_new_intern (cm_utils_json_object_get_string (encrypted ?: root, "sender"));
 
   child = cm_utils_json_object_get_object (encrypted ?: root, "unsigned");
+  /* The server already redacted the event, see m.room.redaction */
+  if (cm_utils_json_object_has_member (child, "redacted_because"))
+    priv->redacted = TRUE;
+
   if (cm_utils_json_object_has_member (child, "transaction_id"))
     {
       g_free (priv->txn_id);

@@ -24,6 +24,7 @@ parse (const char *json)
   return json_node_dup_object (json_parser_get_root (parser));
 }
 
+
 static void
 test_event_redaction_top_level (void)
 {
@@ -51,6 +52,7 @@ test_event_redaction_in_content (void)
   g_assert_cmpstr (cm_event_get_replaces_id (event), ==, "$target");
 }
 
+
 static void
 test_event_replace_encrypted (void)
 {
@@ -68,6 +70,40 @@ test_event_replace_encrypted (void)
 }
 
 
+static void
+test_event_redacted (void)
+{
+  g_autoptr (JsonObject) plain = parse ("{"
+    "\"type\": \"m.room.message\", \"event_id\": \"$a\","
+    "\"content\": {\"msgtype\": \"m.text\", \"body\": \"hi\"}}");
+  /* The server strips the content and adds the redaction event */
+  g_autoptr (JsonObject) by_server = parse ("{"
+    "\"type\": \"m.room.message\", \"event_id\": \"$b\", \"content\": {},"
+    "\"unsigned\": {\"redacted_because\": {\"type\": \"m.room.redaction\","
+    "\"event_id\": \"$r\", \"redacts\": \"$b\"}}}");
+  g_autoptr (JsonObject) enc = parse ("{"
+    "\"type\": \"m.room.encrypted\", \"event_id\": \"$c\", \"content\": {},"
+    "\"unsigned\": {\"redacted_because\": {}}}");
+  g_autoptr (JsonObject) dec = parse ("{"
+    "\"type\": \"m.room.message\", \"event_id\": \"$c\", \"content\": {}}");
+  g_autoptr (CmEvent) event = cm_event_new_from_json (plain, NULL);
+  g_autoptr (CmEvent) event_server = cm_event_new_from_json (by_server, NULL);
+  g_autoptr (CmEvent) event_enc = cm_event_new_from_json (dec, enc);
+  guint updated = 0;
+
+  g_assert_false (cm_event_is_redacted (event));
+  g_assert_true (cm_event_is_redacted (event_server));
+  g_assert_true (cm_event_is_redacted (event_enc));
+
+  /* Marking it ourselves notifies once */
+  g_signal_connect_swapped (event, "updated", G_CALLBACK (g_atomic_int_inc), &updated);
+  cm_event_set_redacted (event);
+  cm_event_set_redacted (event);
+  g_assert_true (cm_event_is_redacted (event));
+  g_assert_cmpuint (updated, ==, 1);
+}
+
+
 int
 main (int argc, char *argv[])
 {
@@ -76,6 +112,7 @@ main (int argc, char *argv[])
   g_test_add_func ("/event/redaction/top-level", test_event_redaction_top_level);
   g_test_add_func ("/event/redaction/in-content", test_event_redaction_in_content);
   g_test_add_func ("/event/replace/encrypted", test_event_replace_encrypted);
+  g_test_add_func ("/event/redacted", test_event_redacted);
 
   return g_test_run ();
 }

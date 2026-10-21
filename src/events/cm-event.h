@@ -44,5 +44,6 @@ CmEventType   cm_event_get_m_type        (CmEvent      *self);
 CmEventState  cm_event_get_state         (CmEvent      *self);
 gint64        cm_event_get_time_stamp    (CmEvent      *self);
 gboolean      cm_event_is_encrypted      (CmEvent      *self);
+gboolean      cm_event_is_redacted       (CmEvent      *self);
 
 G_END_DECLS
