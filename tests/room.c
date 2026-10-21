@@ -328,6 +328,107 @@ test_room_send_text (void)
 }
 
 
+static CmEvent *
+new_event (CmRoom     *room,
+           const char *type,
+           const char *id,
+           const char *content_or_redacts)
+{
+  g_autoptr(JsonObject) root = json_object_new ();
+  g_autoptr(JsonObject) content = json_object_new ();
+
+  json_object_set_string_member (root, "type", type);
+  json_object_set_string_member (root, "event_id", id);
+  json_object_set_string_member (root, "sender", "@alice:example.org");
+  if (g_str_equal (type, "m.room.redaction")) {
+    json_object_set_string_member (root, "redacts", content_or_redacts);
+  } else {
+    json_object_set_string_member (content, "msgtype", "m.text");
+    json_object_set_string_member (content, "body", content_or_redacts);
+  }
+  json_object_set_object_member (root, "content", g_steal_pointer (&content));
+
+  return CM_EVENT (cm_room_event_new_from_json (room, root, NULL));
+}
+
+
+static void
+add_events (CmRoom   *room,
+            gboolean  append,
+            CmEvent  *first,
+            CmEvent  *second)
+{
+  g_autoptr(GPtrArray) events = g_ptr_array_new_with_free_func (g_object_unref);
+
+  g_ptr_array_add (events, first);
+  if (second)
+    g_ptr_array_add (events, second);
+  cm_room_add_events (room, events, append);
+}
+
+
+static void
+test_room_redaction_same_batch (void)
+{
+  CmRoom *room = cm_room_new ("some-room-id");
+  GListModel *list = cm_room_get_events_list (room);
+  CmEvent *msg = new_event (room, "m.room.message", "$m", "hello");
+  CmEvent *other = new_event (room, "m.room.message", "$o", "keep");
+
+  add_events (room, TRUE, g_object_ref (other), g_object_ref (msg));
+  g_assert_false (cm_event_is_redacted (msg));
+
+  add_events (room, TRUE, new_event (room, "m.room.redaction", "$r", "$m"), NULL);
+  g_assert_cmpuint (g_list_model_get_n_items (list), ==, 3);
+  g_assert_true (cm_event_is_redacted (msg));
+  g_assert_false (cm_event_is_redacted (other));
+
+  g_list_store_remove_all (G_LIST_STORE (cm_room_get_events_list (room)));
+  g_assert_finalize_object (msg);
+  g_assert_finalize_object (other);
+  g_assert_finalize_object (room);
+}
+
+
+static void
+test_room_redaction_updates_loaded (void)
+{
+  CmRoom *room = cm_room_new ("some-room-id");
+  CmEvent *msg = new_event (room, "m.room.message", "$m", "hello");
+  guint updated = 0;
+
+  add_events (room, TRUE, g_object_ref (msg), NULL);
+  g_signal_connect_swapped (msg, "updated", G_CALLBACK (g_atomic_int_inc), &updated);
+
+  add_events (room, TRUE, new_event (room, "m.room.redaction", "$r", "$m"), NULL);
+  g_assert_true (cm_event_is_redacted (msg));
+  g_assert_cmpuint (updated, ==, 1);
+
+  g_list_store_remove_all (G_LIST_STORE (cm_room_get_events_list (room)));
+  g_assert_finalize_object (msg);
+  g_assert_finalize_object (room);
+}
+
+
+static void
+test_room_redaction_before_target (void)
+{
+  /* Past events: the redaction is loaded before the event it redacts */
+  CmRoom *room = cm_room_new ("some-room-id");
+  CmEvent *msg;
+
+  add_events (room, FALSE, new_event (room, "m.room.redaction", "$r", "$m"), NULL);
+
+  msg = new_event (room, "m.room.message", "$m", "hello");
+  add_events (room, FALSE, g_object_ref (msg), NULL);
+  g_assert_true (cm_event_is_redacted (msg));
+
+  g_list_store_remove_all (G_LIST_STORE (cm_room_get_events_list (room)));
+  g_assert_finalize_object (msg);
+  g_assert_finalize_object (room);
+}
+
+
 int
 main (int   argc,
       char *argv[])
@@ -339,6 +440,9 @@ main (int   argc,
   g_test_add_func ("/room/redact/uri", test_room_redact_uri);
   g_test_add_func ("/room/redact/no-id", test_room_redact_no_id);
   g_test_add_func ("/room/redact/sync-no-id", test_room_redact_sync_no_id);
+  g_test_add_func ("/room/redaction/same-batch", test_room_redaction_same_batch);
+  g_test_add_func ("/room/redaction/updates-loaded", test_room_redaction_updates_loaded);
+  g_test_add_func ("/room/redaction/before-target", test_room_redaction_before_target);
 
   g_test_add_func ("/room/send/text", test_room_send_text);
 
