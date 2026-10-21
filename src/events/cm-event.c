@@ -48,13 +48,6 @@ static guint signals[N_SIGNALS];
 
 #define event_type_string(_event_type) (cm_utils_get_event_type_str(_event_type))
 
-static char *
-create_txn_id (guint id)
-{
-  return g_strdup_printf ("cm%"G_GINT64_FORMAT".%d",
-                          g_get_real_time () / G_TIME_SPAN_MILLISECOND, id);
-}
-
 static void
 event_parse_relations (CmEvent    *self,
                        JsonObject *root)
@@ -285,6 +278,13 @@ cm_event_get_txn_id (CmEvent *self)
   return priv->txn_id;
 }
 
+/**
+ * cm_event_create_txn_id:
+ * @self: The Event
+ * @id: an id
+ *
+ * Set the transaction id on the event
+ */
 void
 cm_event_create_txn_id (CmEvent *self,
                         guint    id)
@@ -294,7 +294,7 @@ cm_event_create_txn_id (CmEvent *self,
   g_return_if_fail (CM_IS_EVENT (self));
   g_return_if_fail (!priv->event_id);
 
-  priv->txn_id = create_txn_id (id);
+  priv->txn_id = cm_utils_create_txn_id (id);
 }
 
 const char *

@@ -1531,3 +1531,19 @@ cm_utils_get_path_for_m_type (const char  *base_path,
 
   g_return_val_if_reached (NULL);
 }
+
+/**
+ * cm_utils_create_txn_id:
+ * @id: an id
+ *
+ * Create a matrix event id. See
+ * https://spec.matrix.org/v1.14/client-server-api/#transaction-identifiers
+ *
+ * Returns: the transaction id
+ */
+char *
+cm_utils_create_txn_id (guint id)
+{
+  return g_strdup_printf ("cm%"G_GINT64_FORMAT".%d",
+                          g_get_real_time () / G_TIME_SPAN_MILLISECOND, id);
+}
