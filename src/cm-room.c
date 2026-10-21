@@ -2044,6 +2044,188 @@ cm_room_set_typing_notice_finish (CmRoom        *self,
   return g_task_propagate_boolean (G_TASK (result), error);
 }
 
+/* Handles responses that return the event id of a sent/redacted event */
+static void
+room_event_id_cb (GObject *obj, GAsyncResult *result, gpointer user_data)
+{
+  CmRoom *self;
+  g_autoptr(GTask) task = user_data;
+  g_autoptr(JsonObject) object = NULL;
+  g_autoptr(GError) error = NULL;
+  const char *id;
+
+  self = g_task_get_source_object (task);
+  object = g_task_propagate_pointer (G_TASK (result), &error);
+  CM_TRACE ("(%p) Send event %s", self, CM_LOG_SUCCESS (!error));
+
+  if (error) {
+    g_task_return_error (task, g_steal_pointer (&error));
+    return;
+  }
+
+  id = cm_utils_json_object_get_string (object, "event_id");
+  if (!id) {
+    g_task_return_new_error_literal (task, CM_ERROR, CM_ERROR_BAD_JSON, "Response has no event_id");
+    return;
+  }
+
+  g_task_return_pointer (task, g_strdup (id), g_free);
+}
+
+/* https://spec.matrix.org/v1.14/client-server-api/#put_matrixclientv3roomsroomidredacteventidtxnid */
+static char *
+room_get_redact_uri (const char *room_id, const char *event_id, const char *txn_id)
+{
+  g_autofree char *room = g_uri_escape_string (room_id, NULL, FALSE);
+  g_autofree char *event = g_uri_escape_string (event_id, NULL, FALSE);
+  g_autofree char *txn = g_uri_escape_string (txn_id, NULL, FALSE);
+
+  return g_strconcat ("/_matrix/client/v3/rooms/", room, "/redact/",
+                      event, "/", txn, NULL);
+}
+
+/**
+ * cm_room_redact_event_async:
+ * @self: A #CmRoom
+ * @event: The #CmEvent to redact
+ * @reason: (nullable): Why the event is redacted
+ * @cancellable: (nullable): A #GCancellable
+ * @callback: A #GAsyncReadyCallback
+ * @user_data: The user data for @callback.
+ *
+ * Redact (delete) @event. The event must already have been
+ * sent, i.e. have an event id.
+ *
+ * Finish the call with cm_room_redact_event_finish().
+
+ * Since: 0.0.5
+ */
+void
+cm_room_redact_event_async (CmRoom              *self,
+                            CmEvent             *event,
+                            const char          *reason,
+                            GCancellable        *cancellable,
+                            GAsyncReadyCallback  callback,
+                            gpointer             user_data)
+{
+  g_autofree char *uri = NULL;
+  g_autofree char *txn_id = NULL;
+  g_autoptr(GTask) task = NULL;
+  JsonObject *object;
+  const char *event_id;
+
+  g_return_if_fail (CM_IS_ROOM (self));
+  g_return_if_fail (CM_IS_EVENT (event));
+  g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+  task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_source_tag (task, cm_room_redact_event_async);
+
+  event_id = cm_event_get_id (event);
+  if (!event_id) {
+    g_task_return_new_error (task, CM_ERROR, CM_ERROR_INVALID_ROOM_STATE,
+                             "Event has no id, can't redact it");
+    return;
+  }
+
+  txn_id = cm_utils_create_txn_id (cm_client_pop_event_id (self->client));
+  uri = room_get_redact_uri (self->room_id, event_id, txn_id);
+
+  object = json_object_new ();
+  if (reason && *reason)
+    json_object_set_string_member (object, "reason", reason);
+
+  CM_TRACE ("(%p) Redact event", self);
+  cm_net_send_json_async (cm_client_get_net (self->client), 0, object,
+                          uri, SOUP_METHOD_PUT, NULL,
+                          cancellable,
+                          room_event_id_cb,
+                          g_steal_pointer (&task));
+}
+
+/**
+ * cm_room_redact_event_finish:
+ * @self: A #CmRoom
+ * @result: A #GAsyncResult
+ * @error: (nullable): A #GError
+ *
+ * Finish the call to cm_room_redact_event_async().
+ *
+ * Returns: The event id of the redaction event on
+ * success, %NULL otherwise. Free with g_free().
+ *
+ * Since: 0.0.5
+ */
+char *
+cm_room_redact_event_finish (CmRoom        *self,
+                             GAsyncResult  *result,
+                             GError       **error)
+{
+  g_return_val_if_fail (CM_IS_ROOM (self), NULL);
+  g_return_val_if_fail (G_IS_TASK (result), NULL);
+  g_return_val_if_fail (!error || !*error, NULL);
+
+  g_assert (g_task_get_source_tag (G_TASK (result)) == cm_room_redact_event_async);
+
+  return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+static void
+cm_room_redact_event_sync_cb (GObject      *object,
+                              GAsyncResult *res,
+                              gpointer      user_data)
+{
+  CmRoomSyncData *data = user_data;
+
+  data->res = g_object_ref (res);
+  g_main_loop_quit (data->loop);
+}
+
+/**
+ * cm_room_redact_event_sync:
+ * @self: A #CmRoom
+ * @event: The #CmEvent to redact
+ * @reason: (nullable): Why the event is redacted
+ * @cancellable: (nullable): A #GCancellable
+ * @error: The return location for a recoverable error.
+ *
+ * Redact (delete) @event.
+ *
+ * This is a synchronous method. See [method@Room.redact_event_async]
+ * for an asynchronous version.
+ *
+ * Returns: (transfer full): The event id of the redaction event
+ * or %NULL on error.
+ *
+ * Since: 0.0.5
+ */
+char *
+cm_room_redact_event_sync (CmRoom        *self,
+                           CmEvent       *event,
+                           const char    *reason,
+                           GCancellable  *cancellable,
+                           GError       **error)
+{
+  g_autoptr (GMainContext) context = g_main_context_new ();
+  g_autoptr (GMainLoop) loop = g_main_loop_new (context, FALSE);
+  g_autoptr (GAsyncResult) res = NULL;
+  CmRoomSyncData data = { .loop = loop, .res = NULL };
+  char *id;
+
+  g_main_context_push_thread_default (context);
+  cm_room_redact_event_async (self, event, reason, cancellable,
+                              cm_room_redact_event_sync_cb, &data);
+  /* The callback might already have run */
+  if (!data.res)
+    g_main_loop_run (data.loop);
+  res = data.res;
+
+  id = cm_room_redact_event_finish (self, res, error);
+  g_main_context_pop_thread_default (context);
+
+  return id;
+}
+
 static void
 room_set_encryption_cb (GObject      *obj,
                         GAsyncResult *result,

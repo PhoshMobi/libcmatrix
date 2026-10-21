@@ -37,6 +37,7 @@ test_room_new (void)
   g_assert_finalize_object (room);
 }
 
+
 static void
 test_room_new_from_json (void)
 {
@@ -54,6 +55,67 @@ test_room_new_from_json (void)
   cm_room_set_prev_batch (room, "s1_2_3");
 
   g_assert_true (cm_room_is_encrypted (room));
+  g_assert_finalize_object (room);
+}
+
+
+static void
+test_room_redact_uri (void)
+{
+  g_autofree char *uri = NULL;
+
+  uri = room_get_redact_uri ("!room:example.org", "$a/b+c", "cmr1.2");
+  g_assert_cmpstr (uri, ==,
+                   "/_matrix/client/v3/rooms/%21room%3Aexample.org/redact/%24a%2Fb%2Bc/cmr1.2");
+}
+
+
+static void
+quit_cb (GObject *obj, GAsyncResult *result, gpointer user_data)
+{
+  GAsyncResult **res = user_data;
+
+  *res = g_object_ref (result);
+}
+
+
+static void
+test_room_redact_no_id (void)
+{
+  GAsyncResult *result = NULL;
+  g_autoptr (GError) error = NULL;
+  g_autoptr (JsonObject) root = json_object_new ();
+  g_autoptr (CmEvent) event = NULL;
+  CmRoom *room = cm_room_new ("some-room-id");
+
+  json_object_set_string_member (root, "type", "m.room.message");
+  event = cm_event_new_from_json (root, NULL);
+
+  cm_room_redact_event_async (room, event, NULL, NULL, quit_cb, &result);
+  while (!result)
+    g_main_context_iteration (NULL, TRUE);
+
+  g_assert_null (cm_room_redact_event_finish (room, result, &error));
+  g_assert_error (error, CM_ERROR, CM_ERROR_INVALID_ROOM_STATE);
+
+  g_assert_finalize_object (result);
+  g_assert_finalize_object (room);
+}
+
+
+static void
+test_room_redact_sync_no_id (void)
+{
+  g_autoptr(JsonObject) root = json_object_new ();
+  g_autoptr(CmEvent) event = NULL;
+  g_autoptr(GError) error = NULL;
+  CmRoom *room = cm_room_new ("some-room-id");
+
+  json_object_set_string_member (root, "type", "m.room.message");
+  event = cm_event_new_from_json (root, NULL);
+
+  g_assert_null (cm_room_redact_event_sync (room, event, "spam", NULL, &error));
+  g_assert_error (error, CM_ERROR, CM_ERROR_INVALID_ROOM_STATE);
 
   g_assert_finalize_object (room);
 }
@@ -274,6 +336,9 @@ main (int   argc,
 
   g_test_add_func ("/room/new", test_room_new);
   g_test_add_func ("/room/new-from-json", test_room_new_from_json);
+  g_test_add_func ("/room/redact/uri", test_room_redact_uri);
+  g_test_add_func ("/room/redact/no-id", test_room_redact_no_id);
+  g_test_add_func ("/room/redact/sync-no-id", test_room_redact_sync_no_id);
 
   g_test_add_func ("/room/send/text", test_room_send_text);
 
