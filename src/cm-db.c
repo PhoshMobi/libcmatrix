@@ -1169,8 +1169,12 @@ matrix_db_get_account_id (CmDb       *self,
                       "WHERE user_device_id=?1;",
                       -1, &stmt, NULL);
   matrix_bind_int (stmt, 1, user_device_id, "binding when getting account id");
-  if (sqlite3_step (stmt) == SQLITE_ROW)
-    return sqlite3_column_int (stmt, 0);
+  if (sqlite3_step (stmt) == SQLITE_ROW) {
+    int account_id = sqlite3_column_int (stmt, 0);
+    sqlite3_finalize (stmt);
+    return account_id;
+  }
+  sqlite3_finalize (stmt);
 
   if (!insert_if_missing)
     return 0;
@@ -1212,6 +1216,7 @@ matrix_db_get_room_id (CmDb       *self,
 
       return room_id;
     }
+  sqlite3_finalize (stmt);
 
   if (!insert_if_missing)
     return 0;
@@ -1264,6 +1269,7 @@ db_get_room_member_id (CmDb       *self,
 
       return member_id;
     }
+  sqlite3_finalize (stmt);
 
   if (!insert_if_missing)
     return 0;
