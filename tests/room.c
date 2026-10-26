@@ -32,6 +32,27 @@ test_room_new (void)
   g_assert_finalize_object (room);
 }
 
+static void
+test_room_new_from_json (void)
+{
+  g_autoptr(JsonObject) root = NULL;
+  CmRoom *room;
+
+  root = json_object_new ();
+  json_object_set_object_member (root, "local", json_object_new ());
+  json_object_set_string_member (json_object_get_object_member (root, "local"),
+                                 "past_alias", "past");
+  json_object_set_string_member (json_object_get_object_member (root, "local"),
+                                 "encryption", "encrypted");
+
+  room = cm_room_new_from_json ("some-room-id", json_object_ref (root), NULL);
+  cm_room_set_prev_batch (room, "s1_2_3");
+
+  g_assert_true (cm_room_is_encrypted (room));
+
+  g_assert_finalize_object (room);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -39,6 +60,7 @@ main (int   argc,
   g_test_init (&argc, &argv, NULL);
 
   g_test_add_func ("/room/new", test_room_new);
+  g_test_add_func ("/room/new-from-json", test_room_new_from_json);
 
   return g_test_run ();
 }
