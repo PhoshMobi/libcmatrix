@@ -1465,7 +1465,7 @@ room_send_file_cb (GObject      *object,
   message_task = g_task_get_task_data (task);
 
   g_assert (CM_IS_ROOM (self));
-  g_assert (G_TASK (message_task));
+  g_assert (G_IS_TASK (message_task));
 
   message = g_task_get_task_data (message_task);
   g_assert (CM_IS_ROOM_MESSAGE_EVENT (message));
