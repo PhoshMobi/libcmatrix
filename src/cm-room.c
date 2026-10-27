@@ -1447,6 +1447,9 @@ send_cb (GObject      *obj,
 
       g_task_return_pointer (message_task, g_strdup (event_id), g_free);
     }
+
+  /* Keep sending messages until queue is empty */
+  room_send_message_from_queue (self);
 }
 
 static void
