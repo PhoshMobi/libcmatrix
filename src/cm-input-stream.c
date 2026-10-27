@@ -28,7 +28,6 @@ struct _CmInputStream
   char              *aes_iv_base64;
 
   /* For files that will be used to upload */
-  GFile             *file;
   GFileInfo         *file_info;
   GChecksum         *checksum;
   gboolean           checksum_complete;
@@ -170,7 +169,6 @@ cm_input_stream_finalize (GObject *object)
   g_clear_pointer (&self->aes_iv_base64, g_free);
   g_clear_pointer (&self->aes_key_base64, g_free);
 
-  g_clear_object (&self->file);
   g_clear_object (&self->file_info);
 
   G_OBJECT_CLASS (cm_input_stream_parent_class)->finalize (object);
@@ -228,7 +226,6 @@ cm_input_stream_new_from_file (GFile         *file,
 
   self = cm_input_stream_new (stream);
   self->file_info = file_info;
-  self->file = g_object_ref (file);
   self->encrypt = !!encrypt;
 
   if (encrypt)
