@@ -205,7 +205,7 @@ cm_input_stream_new_from_file (GFile         *file,
                                GError       **error)
 {
   CmInputStream *self;
-  GInputStream *stream;
+  g_autoptr (GInputStream) stream = NULL;
   GFileInfo *file_info;
 
   g_return_val_if_fail (G_IS_FILE (file), NULL);
