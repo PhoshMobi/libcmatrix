@@ -1405,7 +1405,7 @@ send_cb (GObject      *obj,
          gpointer      user_data)
 {
   CmRoom *self;
-  GTask *message_task = user_data;
+  g_autoptr(GTask) message_task = user_data;
   g_autoptr(JsonObject) object = NULL;
   GError *error = NULL;
   const char *event_id = NULL;
