@@ -4,7 +4,7 @@ stages:
   - deploy
 
 default:
-  image: debian:trixie
+  image: debian:forky
 
 variables:
   PKGS: ccache meson gcovr gcc
