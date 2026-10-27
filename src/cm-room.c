@@ -1458,7 +1458,7 @@ room_send_file_cb (GObject      *object,
                    gpointer      user_data)
 {
   CmRoom *self;
-  g_autoptr(GTask) task = user_data;
+  g_autoptr(GTask) upload_task = user_data;
   g_autoptr(GError) error = NULL;
   g_autofree char *uri = NULL;
   CmInputStream *stream;
@@ -1467,10 +1467,10 @@ room_send_file_cb (GObject      *object,
   GFile *message_file;
   CmRoomMessageEvent *message;
 
-  g_assert (G_IS_TASK (task));
+  g_assert (G_IS_TASK (upload_task));
 
-  self = g_task_get_source_object (task);
-  message_task = g_task_get_task_data (task);
+  self = g_task_get_source_object (upload_task);
+  message_task = g_task_get_task_data (upload_task);
 
   g_assert (CM_IS_ROOM (self));
   g_assert (G_IS_TASK (message_task));
@@ -1490,6 +1490,7 @@ room_send_file_cb (GObject      *object,
 
       g_task_return_new_error (message_task, G_IO_ERROR, G_IO_ERROR_FAILED,
                                "Failed to upload file: %s", error->message ?: "");
+      /* Drop the ref the message queue held; `upload_task' still holds its own */
       g_object_unref (message_task);
 
       room_send_message_from_queue (self);
@@ -1551,14 +1552,14 @@ room_send_message_from_queue (CmRoom *self)
     {
       GFileProgressCallback progress_cb;
       gpointer progress_user_data;
-      GTask *task;
+      GTask *upload_task;
 
       progress_cb = g_object_get_data (G_OBJECT (message_task), "progress-cb");
       progress_user_data = g_object_get_data (G_OBJECT (message_task), "progress-cb-data");
 
-      task = g_task_new (self, NULL, NULL, NULL);
-      g_task_set_source_tag (task, room_send_message_from_queue);
-      g_task_set_task_data (task, g_object_ref (message_task), g_object_unref);
+      upload_task = g_task_new (self, NULL, NULL, NULL);
+      g_task_set_source_tag (upload_task, room_send_message_from_queue);
+      g_task_set_task_data (upload_task, g_object_ref (message_task), g_object_unref);
       g_debug ("(%p) Upload file, txn-id: '%s'",
                self, cm_event_get_txn_id (CM_EVENT (message)));
       cm_net_put_file_async (cm_client_get_net (self->client),
@@ -1566,7 +1567,7 @@ room_send_message_from_queue (CmRoom *self)
                              cm_room_is_encrypted (self),
                              progress_cb, progress_user_data,
                              g_task_get_cancellable (message_task),
-                             room_send_file_cb, task);
+                             room_send_file_cb, upload_task);
       return;
     }
 
@@ -1805,19 +1806,19 @@ cm_room_send_text_async (CmRoom              *self,
 {
   CmRoomMessageEvent *message;
   CmUser *user;
-  GTask *task;
+  GTask *message_task;
 
   g_return_val_if_fail (CM_IS_ROOM (self), NULL);
 
-  task = g_task_new (self, cancellable, callback, user_data);
+  message_task = g_task_new (self, cancellable, callback, user_data);
 
   message = cm_room_message_event_new (CM_CONTENT_TYPE_TEXT);
   cm_event_set_state (CM_EVENT (message), CM_EVENT_STATE_WAITING);
   cm_room_message_event_set_body (message, text);
   cm_event_create_txn_id (CM_EVENT (message),
                           cm_client_pop_event_id (self->client));
-  g_task_set_task_data (task, message, g_object_unref);
-  g_task_set_source_tag (task, cm_room_send_text_async);
+  g_task_set_task_data (message_task, message, g_object_unref);
+  g_task_set_source_tag (message_task, cm_room_send_text_async);
 
   user = room_find_user (self, cm_client_get_user_id (self->client), TRUE);
   cm_event_set_sender (CM_EVENT (message), user);
@@ -1827,7 +1828,7 @@ cm_room_send_text_async (CmRoom              *self,
   cm_room_event_list_append_event (self->room_event, CM_EVENT (message));
   room_add_event_to_db (self, CM_EVENT (message));
 
-  g_queue_push_tail (self->message_queue, task);
+  g_queue_push_tail (self->message_queue, message_task);
 
   room_send_message_from_queue (self);
 
@@ -1886,22 +1887,22 @@ cm_room_send_file_async (CmRoom                *self,
 {
   CmRoomMessageEvent *message;
   CmUser *user;
-  GTask *task;
+  GTask *message_task;
 
   g_return_val_if_fail (CM_IS_ROOM (self), NULL);
   g_return_val_if_fail (G_IS_FILE (file), NULL);
 
-  task = g_task_new (self, cancellable, callback, user_data);
-  g_object_set_data (G_OBJECT (task), "progress-cb", progress_callback);
-  g_object_set_data (G_OBJECT (task), "progress-cb-data", progress_user_data);
+  message_task = g_task_new (self, cancellable, callback, user_data);
+  g_object_set_data (G_OBJECT (message_task), "progress-cb", progress_callback);
+  g_object_set_data (G_OBJECT (message_task), "progress-cb-data", progress_user_data);
 
   message = cm_room_message_event_new (CM_CONTENT_TYPE_FILE);
   cm_event_set_state (CM_EVENT (message), CM_EVENT_STATE_WAITING);
   cm_room_message_event_set_file (message, file, body);
   cm_event_create_txn_id (CM_EVENT (message),
                           cm_client_pop_event_id (self->client));
-  g_task_set_task_data (task, message, g_object_unref);
-  g_task_set_source_tag (task, cm_room_send_file_async);
+  g_task_set_task_data (message_task, message, g_object_unref);
+  g_task_set_source_tag (message_task, cm_room_send_file_async);
 
   user = room_find_user (self, cm_client_get_user_id (self->client), TRUE);
   cm_event_set_sender (CM_EVENT (message), user);
@@ -1910,7 +1911,7 @@ cm_room_send_file_async (CmRoom                *self,
            self, cm_event_get_txn_id (CM_EVENT (message)));
   cm_room_event_list_append_event (self->room_event, CM_EVENT (message));
 
-  g_queue_push_tail (self->message_queue, task);
+  g_queue_push_tail (self->message_queue, message_task);
 
   room_send_message_from_queue (self);
 
