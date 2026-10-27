@@ -115,7 +115,7 @@ ma_create_olm_out_session (CmEnc      *self,
 {
   CmOlm *session;
 
-  g_assert (CM_ENC (self));
+  g_assert (CM_IS_ENC (self));
 
   session = cm_olm_outbound_new (self->account, curve_key, one_time_key, room_id);
 
@@ -187,7 +187,7 @@ create_new_details (CmEnc *self)
   cm_gcry_t buffer;
   size_t length, err;
 
-  g_assert (CM_ENC (self));
+  g_assert (CM_IS_ENC (self));
 
   g_debug ("(%p) Creating new encryption keys", self);
 
