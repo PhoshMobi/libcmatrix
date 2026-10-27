@@ -606,14 +606,22 @@ put_file_async_cb (GObject      *obj,
       const char *file_url;
 
       file_url = cm_utils_json_object_get_string (root, "content_uri");
-      g_task_return_pointer (task, g_strdup (file_url), g_free);
+      /* Server reply must be an mxc URI */
+      if (file_url && g_str_has_prefix (file_url, "mxc://"))
+        g_task_return_pointer (task, g_strdup (file_url), g_free);
+      else {
+        g_warning ("Invalid content URI %s", file_url);
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                                 "Server reply has no valid content_uri");
+      }
     }
   else
     {
       if (error)
         g_task_return_error (task, error);
       else
-        g_task_return_pointer (task, NULL, NULL);
+        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                                 "Empty server reply");
     }
 }
 
