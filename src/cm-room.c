@@ -1482,6 +1482,8 @@ room_send_file_cb (GObject      *object,
 
       g_task_return_new_error (message_task, G_IO_ERROR, G_IO_ERROR_FAILED,
                                "Failed to upload file: %s", error->message ?: "");
+      g_object_unref (message_task);
+
       room_send_message_from_queue (self);
 
       return;
