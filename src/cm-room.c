@@ -1418,6 +1418,11 @@ send_cb (GObject      *obj,
   object = g_task_propagate_pointer (G_TASK (result), &error);
 
   event_id = cm_utils_json_object_get_string (object, "event_id");
+  if (!event_id && !error) {
+     g_set_error_literal (&error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
+                          "Server reply has no event_id");
+  }
+
   g_debug ("(%p) Send message %s. txn-id: '%s'", self,
            CM_LOG_SUCCESS (!error), cm_event_get_txn_id (event));
 
