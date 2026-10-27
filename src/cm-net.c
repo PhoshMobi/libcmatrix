@@ -51,7 +51,7 @@ net_get_file_stream_cb (GObject      *obj,
 {
   CmNet *self;
   g_autoptr(GTask) task = user_data;
-  GInputStream *stream;
+  g_autoptr (GInputStream) stream = NULL;
   GError *error = NULL;
 
   g_assert (G_IS_TASK (task));
