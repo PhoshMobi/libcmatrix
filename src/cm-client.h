@@ -41,7 +41,7 @@ G_DECLARE_FINAL_TYPE (CmClient, cm_client, CM, CLIENT, GObject)
  * are easier to use.
  *
  * The `GMainContext` for these operations isn't well defined atm, see
- * https://source.puri.sm/Librem5/libcmatrix/-/issues/24
+ * https://gitlab.gnome.org/guidog/libcmatrix/-/work_items/24
  */
 typedef void   (*CmCallback)                        (CmClient           *self,
                                                      CmRoom             *room,

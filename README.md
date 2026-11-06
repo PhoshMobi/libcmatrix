@@ -47,9 +47,9 @@ These applications use libcmatrix:
 
 <!-- Links referenced elsewhere -->
 [matrix]: https://matrix.org
-[coverage]: https://source.puri.sm/Librem5/libcmatrix/coverage
-[gitlab]: https://source.puri.sm/Librem5/libcmatrix/
-[issues]: https://source.puri.sm/Librem5/libcmatrix/issues
+[coverage]: https://guidog.pages.gitlab.gnome.org/libcmatrix/coverage/
+[gitlab]: https://gitlab.gnome.org/guidog/libcmatrix/
+[issues]: https://gitlab.gnome.org/guidog/libcmatrix/-/work_items/
 [chatty]: https://gitlab.gnome.org/World/Chatty
 [eigenvalue]: https://github.com/agx/eigenvalue
 [here]: https://guidog.pages.gitlab.gnome.org/libcmatrix/index.html

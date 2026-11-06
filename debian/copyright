@@ -1,5 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Source: https://source.puri.sm/Librem5/libcmatrix
+Source: https://gitlab.gnome.org/guidog/libcmatrix/
 
 Files: *
 Copyright: 2022 Purism SPC
