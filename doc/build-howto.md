@@ -4,7 +4,7 @@ Slug: building
 # Compiling with libcmatrix
 
 If you need to build libcmatrix, get the source from
-[here](https://source.puri.sm/Librem5/libcmatrix/) and see the `README.md` file.
+[here](https://gitlab.gnome.org/guidog/libcmatrix/) and see the `README.md` file.
 
 ## Bundling the library
 
@@ -14,7 +14,7 @@ code as a meson subproject. Add this as `subprojects/libcmatrix.wrap`:
 ```
 [wrap-git]
 directory=libcmatrix
-url=https://source.puri.sm/Librem5/libcmatrix
+url=https://gitlab.gnome.org/guidog/libcmatrix.git
 revision=main
 depth=1
 ```
@@ -35,4 +35,3 @@ libcmatrix_dep = dependency('libcmatrix',
     'gtk_doc=false',
   ])
 ```
-

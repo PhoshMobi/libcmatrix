@@ -110,9 +110,13 @@ doc:
 pages:
   image: busybox:1
   stage: deploy
+  needs:
+    - doc
+    - build
   script:
     - mkdir public
     - mv _build/meson-logs/coveragereport ${CI_PROJECT_DIR}/public/coverage
+    - mv _doc/* ${CI_PROJECT_DIR}/public/
   artifacts:
     paths:
       - public

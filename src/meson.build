@@ -82,7 +82,7 @@ if install_lib
     name: 'libcmatrix',
     version : meson.project_version(),
     description: 'Matrix client library',
-    url: 'https://source.puri.sm/Librem5/libcmatrix',
+    url: 'https://gitlab.gnome.org/guidog/libcmatrix/',
     requires: gio_dep,
   )
 endif

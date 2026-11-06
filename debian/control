@@ -18,7 +18,7 @@ Build-Depends:
  pkgconf,
 Standards-Version: 4.6.2
 Section: libs
-Homepage: https://source.puri.sm/Librem5/libcmatrix
+Homepage: https://gitlab.gnome.org/guidog/libcmatrix/
 Rules-Requires-Root: no
 
 Package: libcmatrix0u

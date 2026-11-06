@@ -3,13 +3,6 @@ libcmatrix
 
 A [Matrix][matrix] protocol library written in C using GObject.
 
-<div>
-  <a href="https://source.puri.sm/Librem5/libcmatrix/pipelines"><img
-     src="https://source.puri.sm/Librem5/libcmatrix/badges/main/pipeline.svg" /></a>
-  <a href="https://source.puri.sm/Librem5/libcmatrix/coverage"><img
-     src="https://source.puri.sm/Librem5/libcmatrix/badges/main/coverage.svg" /></a>
-</div>
-
 ---
 
 You can use the library if you are writing a matrix client in C.
@@ -54,9 +47,9 @@ These applications use libcmatrix:
 
 <!-- Links referenced elsewhere -->
 [matrix]: https://matrix.org
-[coverage]: https://source.puri.sm/Librem5/libcmatrix/coverage
-[gitlab]: https://source.puri.sm/Librem5/libcmatrix/
-[issues]: https://source.puri.sm/Librem5/libcmatrix/issues
+[coverage]: https://guidog.pages.gitlab.gnome.org/libcmatrix/coverage/
+[gitlab]: https://gitlab.gnome.org/guidog/libcmatrix/
+[issues]: https://gitlab.gnome.org/guidog/libcmatrix/-/work_items/
 [chatty]: https://gitlab.gnome.org/World/Chatty
 [eigenvalue]: https://github.com/agx/eigenvalue
-[here]: https://agx.github.io/libcmatrix/
+[here]: https://guidog.pages.gitlab.gnome.org/libcmatrix/index.html
