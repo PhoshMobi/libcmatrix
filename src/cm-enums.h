@@ -200,3 +200,21 @@ typedef enum
   CM_EVENT_STATE_SENT,
   CM_EVENT_STATE_RECEIVED,
 } CmEventState;
+
+/**
+ * CmSyncMode:
+ * @CM_SYNC_MODE_CONTINUOUS: Sync happens continuously without client
+ *    interaction via `/sync` long-polls. So client stays "in sync"
+ *    automatically.
+ * @CM_SYNC_MODE_MANUAL: `/sync` long-polls are suspended. The client
+ *    needs to invoke e.g. [method@Client.sync_once_async].
+ *    to stay "in sync" with the server. However client stays logged
+ *    in and [method@Client.is_sync] stays `TRUE`.
+ *
+ * How events are synced from the server.
+ */
+typedef enum
+{
+  CM_SYNC_MODE_CONTINUOUS = 0,
+  CM_SYNC_MODE_MANUAL = 1,
+} CmSyncMode;
