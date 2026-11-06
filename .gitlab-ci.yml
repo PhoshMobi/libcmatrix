@@ -4,7 +4,7 @@ stages:
   - deploy
 
 default:
-  image: debian:trixie
+  image: debian:forky
 
 variables:
   PKGS: ccache meson gcovr gcc
@@ -34,6 +34,8 @@ build:
     when: always
     paths:
       - _build
+    reports:
+      junit: _build/meson-logs/testlog.junit.xml
 
 asan-test:
   stage: check

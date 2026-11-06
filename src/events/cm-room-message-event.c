@@ -157,6 +157,7 @@ cm_room_message_event_finalize (GObject *object)
   g_free (self->body);
   g_free (self->mxc_uri);
   g_free (self->file_path);
+  g_clear_object (&self->file);
 
   G_OBJECT_CLASS (cm_room_message_event_parent_class)->finalize (object);
 }
