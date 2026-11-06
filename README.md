@@ -59,4 +59,4 @@ These applications use libcmatrix:
 [issues]: https://source.puri.sm/Librem5/libcmatrix/issues
 [chatty]: https://gitlab.gnome.org/World/Chatty
 [eigenvalue]: https://github.com/agx/eigenvalue
-[here]: https://agx.github.io/libcmatrix/
+[here]: https://guidog.pages.gitlab.gnome.org/libcmatrix/index.html
