@@ -3,13 +3,6 @@ libcmatrix
 
 A [Matrix][matrix] protocol library written in C using GObject.
 
-<div>
-  <a href="https://source.puri.sm/Librem5/libcmatrix/pipelines"><img
-     src="https://source.puri.sm/Librem5/libcmatrix/badges/main/pipeline.svg" /></a>
-  <a href="https://source.puri.sm/Librem5/libcmatrix/coverage"><img
-     src="https://source.puri.sm/Librem5/libcmatrix/badges/main/coverage.svg" /></a>
-</div>
-
 ---
 
 You can use the library if you are writing a matrix client in C.
