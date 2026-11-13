@@ -1,3 +1,14 @@
+libcmatrix 0.1.0
+----------------
+Released November 2026
+* Numerous leak and bug fixes
+* Add redact handling
+* Allow to supend sync (needed for unified push support)
+* Issues fixed:
+    * https://gitlab.gnome.org/guidog/libcmatrix/-/work_items/57
+* Contributors:
+    * Guido Günther
+
 libcmatrix 0.0.4
 ----------------
 Released October 2025
