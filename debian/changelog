@@ -1,3 +1,111 @@
+libcmatrix (0.1.0) experimental; urgency=medium
+
+  * tree: Push context after attaching to the main loop.
+    We want it to apply to the new main loop.
+  * ci: Drop tags
+  * room: Free more members in finalize.
+    We were leaking plenty of stuff.
+  * room: Don't leak task on early return.
+    The early returns didn't free the task. Instead of
+    unref'ing there use automatic cleanup.
+  * room: Actually finish the task.
+    Return error or success instead of just dropping the
+    task to the floor.
+  * client: Don't lowercase user-id.
+    We're supposed to use what the server gives us.
+    See https://spec.matrix.org/v1.7/client-server-api/?get_matrixclientv3login#login
+    Closes: https://gitlab.gnome.org/guidog/libcmatrix/-/work_items/57
+  * db: Finalize after executing each prepared statement.
+    Preparing over an unfinalized stmt leaks memory.
+  * client: Allow to suspend sync.
+    Allow to suspend sync and then do explicit sync calls. This
+    will be useful for unified push.
+  * ci: Use forky by default.
+    Trixie is a bit dated
+  * ci: Collect JUnit reports.
+    Makes tests easier to check
+  * enc: Fix assertion.
+    The cast will not assert as it returns a pointer, the _IS_ check
+    returns TRUE/FALSE so we can assert propertly.
+    $ git grep -E 'g_assert .(G|CM)_[^I]'
+    Fixes: 0248068 ("Initial commit")
+  * net: Handle upload errors better.
+    Check for a valid URI and treat empty reply as error.
+    Fixes: 355d850 ("net: Add API to upload file")
+  * net: Don't leak stream
+    soup_session_send_finish() is transfer full
+    Fixes: 0248068 ("Initial commit")
+  * input-stream: Drop unused file.
+    It leaked but wasn't used
+    Fixes: 6be6c34 ("input-stream: Add APIs to create stream from file")
+  * input-stream: Don't leak stream.
+    We create a CmInputStream from it which takes its own reference.
+  * room-event-message: Don't leak file on finalize
+  * room: Fix assertion.
+    The cast will not assert as it returns a pointer, the _IS_ check
+    returns TRUE/FALSE so we can assert propertly.
+    $ git grep -E 'g_assert .(G|CM)_[^I]'
+    Fixes: d336f00 ("room: Use event object to send messages")
+  * room: Don't leak message task in send-file callback
+  * room: Better guard against incomplete replies.
+    Set an error if we got a reponse that doesn't have an
+    `event-id`.
+  * room: Keep the queue running.
+    The `send_cb` never kicked the queue again so a failed message
+    wouldn't be re-run.
+    This should fix the issue where on mobile one often has the 2nd
+    last message actually send when sending a new message.
+    Other parts of the code like device key loading or file upload
+    failures already kicked the queue again.
+  * room: Don't leak message_task in send_cb
+  * room: Improve task naming.
+    There's a lot of plain `task` here. Lets name tasks added to the
+    message_queue `message_task` consistently, file upload task is
+    called `upload_task` so it becomes easier to see where references go.
+  * room: Add a simple round trip send test.
+    This tests sending events, we can test e.g. file uploads
+    or error paths in the future too.
+  * doc: Publish on gitlab pages
+  * doc: Link to API doc location.
+    Better to have it in the same repo now that we have gitlab pages
+    available.
+  * doc: Drop link to pipeline status, etc.
+    Less things to adjust on repo move
+  * tree: Update repo location
+  * dir-locals: Modernize.
+    Use Phosh indent
+  * build: Bump glib dependeny.
+    We want to use g_set_str()
+  * event: Simplify event_parse_relation.
+    Use early return to save some indent levels. Use
+    g_set_str() to avoid leaking when outer and inner
+    event json have the same fields.
+  * event: Parse `redacts` from content for room version 11+
+    Since room version 11 (MSC2174, spec v1.8) the `redacts` key of
+    m.room.redaction events lives in `content` and the top level key is
+    no longer sent by servers. We only looked at the top level so
+    redactions in modern rooms never got linked to their target.
+    Look in both places and add tests.
+  * utils: Move event id creation here.
+    It's also useful for e.g. redactions
+  * room: Add API to redact events
+  * event: Allow to set events as redacted.
+    If an event already has a `unsigned.redacted_because` the event has been
+    redacted already when sent to us. Events can also be marked redacted
+    later, for that case we set a method to set them as redacted.
+  * room-event-list: Mark redacted events.
+    When a m.room.redaction event is added to the room, mark the event it
+    redacts as redacted.
+    The redaction can arrive before the target (when loading past events) so
+    remember the ids we have seen redactions for and also check events that
+    are about to be added.
+    This handles the events that were already sent by the server before the
+    redaction arrived.
+  * db: Load redaction events too.
+    This restores deleted relations ships when loading from cache.
+
+ -- Guido Günther <agx@sigxcpu.org>  Fri, 13 Nov 2026 12:39:07 +0100
+
 libcmatrix (0.0.4) experimental; urgency=medium
 
   [ Evangelos Ribeiro Tzaras ]
