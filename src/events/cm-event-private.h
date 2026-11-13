@@ -34,6 +34,7 @@ CmEvent      *cm_event_new_from_json      (JsonObject   *root,
                                            JsonObject   *encrypted);
 void          cm_event_set_state          (CmEvent      *self,
                                            CmEventState  state);
+void          cm_event_set_redacted       (CmEvent      *self);
 const char   *cm_event_get_transaction_id   (CmEvent      *self);
 const char   *cm_event_get_verification_key (CmEvent        *self);
 const char   *cm_event_get_txn_id         (CmEvent      *self);

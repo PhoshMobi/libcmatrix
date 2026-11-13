@@ -96,3 +96,4 @@ char         *cm_utils_get_path_for_m_type      (const char          *base_path,
                                                  CmEventType          type,
                                                  gboolean             thumbnail,
                                                  const char          *file_name);
+char *        cm_utils_create_txn_id            (guint id);

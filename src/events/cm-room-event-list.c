@@ -1,6 +1,7 @@
 /* cm-client.c
  *
  * Copyright 2022 Purism SPC
+ *           2024-2026 Phosh.mobi e.V.
  *
  * Author(s):
  *   Mohammed Sadiq <sadiq@sadiqpk.org>
@@ -45,6 +46,8 @@ struct _CmRoomEventList
   CmEvent      *tombstone_event;
 
   JsonObject   *local_json;
+
+  GHashTable   *redacted_ids; /* key: string, value: NULL */
 
   gboolean      save_pending;
 };
@@ -186,6 +189,7 @@ cm_room_event_list_finalize (GObject *object)
   g_clear_object (&self->tombstone_event);
 
   g_clear_pointer (&self->local_json, json_object_unref);
+  g_clear_pointer (&self->redacted_ids, g_hash_table_unref);
 
   g_clear_weak_pointer (&self->room);
   g_clear_weak_pointer (&self->client);
@@ -205,6 +209,7 @@ static void
 cm_room_event_list_init (CmRoomEventList *self)
 {
   self->events_list = g_list_store_new (CM_TYPE_EVENT);
+  self->redacted_ids = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 }
 
 CmRoomEventList *
@@ -342,6 +347,62 @@ cm_room_event_list_append_event (CmRoomEventList *self,
   g_list_store_append (self->events_list, event);
 }
 
+/*
+ * Mark events targeted by redactions in @events as redacted. The
+ * redaction might arrive before (past events) or after the event it
+ * redacts, so remember the ids and look at both the new and the
+ * already loaded events.
+ */
+static void
+event_list_apply_redactions (CmRoomEventList *self,
+                             GPtrArray       *events)
+{
+  g_autoptr(GPtrArray) targets = NULL;
+  guint n_items;
+
+  for (guint i = 0; i < events->len; i++) {
+    CmEvent *event = g_ptr_array_index (events, i);
+    const char *target;
+
+    if (cm_event_get_m_type (event) != CM_M_ROOM_REDACTION)
+      continue;
+
+    target = cm_event_get_replaces_id (event);
+    if (!target || g_hash_table_contains (self->redacted_ids, target))
+      continue;
+
+    g_hash_table_add (self->redacted_ids, g_strdup (target));
+    if (!targets)
+      targets = g_ptr_array_new ();
+    g_ptr_array_add (targets, (gpointer)target);
+  }
+
+  /* Events that are about to be added */
+  for (guint i = 0; i < events->len; i++) {
+    CmEvent *event = g_ptr_array_index (events, i);
+    const char *id = cm_event_get_id (event);
+
+    if (id && g_hash_table_remove (self->redacted_ids, id))
+      cm_event_set_redacted (event);
+  }
+
+  /* Walk old events backwards as that is what usually gets redacted */
+  n_items = g_list_model_get_n_items (G_LIST_MODEL (self->events_list));
+  for (guint i = n_items; targets && i > 0; i--) {
+    g_autoptr (CmEvent) event = NULL;
+    const char *id;
+
+    event = g_list_model_get_item (G_LIST_MODEL (self->events_list), i - 1);
+    id = cm_event_get_id (event);
+
+    for (guint j = 0; id && j < targets->len; j++)
+      if (g_str_equal (id, g_ptr_array_index (targets, j))) {
+        cm_event_set_redacted (event);
+        break;
+      }
+  }
+}
+
 void
 cm_room_event_list_add_events (CmRoomEventList *self,
                                GPtrArray       *events,
@@ -390,6 +451,8 @@ cm_room_event_list_add_events (CmRoomEventList *self,
       else
         i++;
     }
+
+  event_list_apply_redactions (self, events);
 
   if (append)
     {

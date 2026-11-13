@@ -1,8 +1,22 @@
-((nil . ((indent-tabs-mode . nil)))
- (c-mode . ((c-file-style . "GNU")
+(
+ (c-mode . (
+            (c-file-style . "linux")
+            (indent-tabs-mode . nil)
             (c-basic-offset . 2)
-            (c-file-offsets
-             (brace-list-intro . +))))
- (c-ts-mode . ((c-ts-mode-style . gnu)
-               (c-ts-mode-indent-offset . 2)))
- )
+            (display-fill-column-indicator-column . 100)
+            ))
+ (setq auto-mode-alist (cons '("\\.ui$" . nxml-mode) auto-mode-alist))
+ (nxml-mode . (
+            (indent-tabs-mode . nil)
+            ))
+ (css-mode . (
+            (css-indent-offset . 2)
+            ))
+ (js-mode . (
+             (indent-tabs-mode . nil)
+             (js-indent-level . 2)
+            ))
+ (meson-mode . (
+             (indent-tabs-mode . nil)
+            ))
+)

@@ -35,6 +35,7 @@ typedef struct
   gint64         time_stamp;
   CmEventType    event_type;
   CmEventState   event_state;
+  gboolean       redacted;
 } CmEventPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (CmEvent, cm_event, G_TYPE_OBJECT)
@@ -47,13 +48,6 @@ enum {
 static guint signals[N_SIGNALS];
 
 #define event_type_string(_event_type) (cm_utils_get_event_type_str(_event_type))
-
-static char *
-create_txn_id (guint id)
-{
-  return g_strdup_printf ("cm%"G_GINT64_FORMAT".%d",
-                          g_get_real_time () / G_TIME_SPAN_MILLISECOND, id);
-}
 
 static void
 event_parse_relations (CmEvent    *self,
@@ -68,33 +62,44 @@ event_parse_relations (CmEvent    *self,
   child = cm_utils_json_object_get_object (root, "content");
   child = cm_utils_json_object_get_object (child, "m.relates_to");
 
+  /* m.replace */
   type = cm_utils_json_object_get_string (child, "rel_type");
   value = cm_utils_json_object_get_string (child, "event_id");
-
   if (g_strcmp0 (type, "m.replace") == 0)
-    priv->replaces_event_id = g_strdup (value);
+    g_set_str (&priv->replaces_event_id, value);
+  if (priv->replaces_event_id)
+    return;
 
-  if (!priv->replaces_event_id)
-    {
-      child = cm_utils_json_object_get_object (root, "unsigned");
-      priv->replaces_event_id = g_strdup (cm_utils_json_object_get_string (child, "replaces_state"));
-    }
+  /* state event replacement */
+  child = cm_utils_json_object_get_object (root, "unsigned");
+  g_set_str (&priv->replaces_event_id,
+             cm_utils_json_object_get_string (child, "replaces_state"));
+  if (priv->replaces_event_id)
+    return;
 
-  if (!priv->replaces_event_id)
-    {
-      child = cm_utils_json_object_get_object (root, "unsigned");
-      child = cm_utils_json_object_get_object (child, "m.relations");
-      child = cm_utils_json_object_get_object (child, "m.replace");
-      priv->replaces_event_id = g_strdup (cm_utils_json_object_get_string (child, "event_id"));
-    }
+  /* replacement bundled with new message */
+  child = cm_utils_json_object_get_object (root, "unsigned");
+  child = cm_utils_json_object_get_object (child, "m.relations");
+  child = cm_utils_json_object_get_object (child, "m.replace");
+  g_set_str (&priv->replaces_event_id,
+             cm_utils_json_object_get_string (child, "event_id"));
+  if (priv->replaces_event_id)
+    return;
 
-  if (!priv->replaces_event_id)
-    {
-      type = cm_utils_json_object_get_string (root, "type");
+  /* redaction */
+  type = cm_utils_json_object_get_string (root, "type");
+  if (g_strcmp0 (event_type_string (CM_M_ROOM_REDACTION), type) == 0) {
+    /* Room versions < 11 have it at the top level */
+    g_set_str (&priv->replaces_event_id,
+               cm_utils_json_object_get_string (root, "redacts"));
+    if (priv->replaces_event_id)
+      return;
 
-      if (g_strcmp0 (event_type_string (CM_M_ROOM_REDACTION), type) == 0)
-        priv->replaces_event_id = cm_utils_json_object_dup_string (root, "redacts");
-    }
+    /* room version >= 11 */
+    child = cm_utils_json_object_get_object (root, "content");
+    g_set_str (&priv->replaces_event_id,
+               cm_utils_json_object_get_string (child, "redacts"));
+  }
 }
 
 static gpointer
@@ -234,6 +239,43 @@ cm_event_get_replaces_id (CmEvent *self)
   return priv->replaces_event_id;
 }
 
+/**
+ * cm_event_is_redacted:
+ * @self: A #CmEvent
+ *
+ * Check whether @self was redacted (deleted). The content of such
+ * events must not be shown. Connect to the #CmEvent::updated signal
+ * to get notified when an event gets redacted.
+ *
+ * Returns: %TRUE if the event was redacted, %FALSE otherwise.
+ *
+ * Since: 0.0.5
+ */
+gboolean
+cm_event_is_redacted (CmEvent *self)
+{
+  CmEventPrivate *priv = cm_event_get_instance_private (self);
+
+  g_return_val_if_fail (CM_IS_EVENT (self), FALSE);
+
+  return priv->redacted;
+}
+
+void
+cm_event_set_redacted (CmEvent *self)
+{
+  CmEventPrivate *priv = cm_event_get_instance_private (self);
+
+  g_return_if_fail (CM_IS_EVENT (self));
+
+  if (priv->redacted)
+    return;
+
+  priv->redacted = TRUE;
+  g_signal_emit (self, signals[UPDATED], 0);
+}
+
+
 const char *
 cm_event_get_reply_to_id (CmEvent *self)
 {
@@ -274,6 +316,13 @@ cm_event_get_txn_id (CmEvent *self)
   return priv->txn_id;
 }
 
+/**
+ * cm_event_create_txn_id:
+ * @self: The Event
+ * @id: an id
+ *
+ * Set the transaction id on the event
+ */
 void
 cm_event_create_txn_id (CmEvent *self,
                         guint    id)
@@ -283,7 +332,7 @@ cm_event_create_txn_id (CmEvent *self,
   g_return_if_fail (CM_IS_EVENT (self));
   g_return_if_fail (!priv->event_id);
 
-  priv->txn_id = create_txn_id (id);
+  priv->txn_id = cm_utils_create_txn_id (id);
 }
 
 const char *
@@ -398,6 +447,10 @@ cm_event_set_json (CmEvent    *self,
     priv->sender_id = g_ref_string_new_intern (cm_utils_json_object_get_string (encrypted ?: root, "sender"));
 
   child = cm_utils_json_object_get_object (encrypted ?: root, "unsigned");
+  /* The server already redacted the event, see m.room.redaction */
+  if (cm_utils_json_object_has_member (child, "redacted_because"))
+    priv->redacted = TRUE;
+
   if (cm_utils_json_object_has_member (child, "transaction_id"))
     {
       g_free (priv->txn_id);

@@ -80,6 +80,20 @@ void          cm_room_set_typing_notice_async     (CmRoom                *self,
 gboolean      cm_room_set_typing_notice_finish    (CmRoom                *self,
                                                    GAsyncResult          *result,
                                                    GError               **error);
+void          cm_room_redact_event_async          (CmRoom                *self,
+                                                   CmEvent               *event,
+                                                   const char            *reason,
+                                                   GCancellable          *cancellable,
+                                                   GAsyncReadyCallback    callback,
+                                                   gpointer               user_data);
+char         *cm_room_redact_event_finish         (CmRoom                *self,
+                                                   GAsyncResult          *result,
+                                                   GError               **error);
+char         *cm_room_redact_event_sync           (CmRoom                *self,
+                                                   CmEvent               *event,
+                                                   const char            *reason,
+                                                   GCancellable          *cancellable,
+                                                   GError               **error);
 void          cm_room_enable_encryption_async     (CmRoom                *self,
                                                    GCancellable          *cancellable,
                                                    GAsyncReadyCallback    callback,

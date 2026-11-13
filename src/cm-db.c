@@ -203,18 +203,27 @@ db_get_past_room_events (CmDb   *self,
     skip = TRUE;
 
   sqlite3_prepare_v2 (self->db,
-                      "SELECT id,event_state,room_events.json_data FROM room_events "
-                      "WHERE room_id=? AND sorted_id <= ? "
-                      /* Limit to messages until chatty has better events support */
-                      "AND (event_type=? OR event_type=?)"
-                      "ORDER BY sorted_id DESC, id DESC LIMIT ?",
+                      /* data columns */
+                      "SELECT room_events.id,room_events.event_state,room_events.json_data,"
+                      "       redaction.id "
+                      "FROM room_events "
+                      /* fill redaction.id column */
+                      "LEFT JOIN room_events AS redaction "
+                      "  ON redaction.id = room_events.replaced_with_id "
+                      "  AND redaction.event_type = ?1 "
+                      /* from room */
+                      "WHERE room_events.room_id = ?2 AND room_events.sorted_id <= ?3 "
+                      /* Limit to messages to room events until chatty has better events support */
+                      "AND (room_events.event_type = ?4 OR room_events.event_type = ?5) "
+                      "ORDER BY room_events.sorted_id DESC, room_events.id DESC LIMIT ?6",
                       -1, &stmt, NULL);
 
-  matrix_bind_int (stmt, 1, room_id, "binding when loading past events");
-  matrix_bind_int (stmt, 2, from_sorted_event_id, "binding when loading past events");
-  matrix_bind_int (stmt, 3, CM_M_ROOM_MESSAGE, "binding when loading past events");
-  matrix_bind_int (stmt, 4, CM_M_ROOM_ENCRYPTED, "binding when loading past events");
-  matrix_bind_int (stmt, 5, max_count, "binding when loading past events");
+  matrix_bind_int (stmt, 1, CM_M_ROOM_REDACTION, "binding when loading past events");
+  matrix_bind_int (stmt, 2, room_id, "binding when loading past events");
+  matrix_bind_int (stmt, 3, from_sorted_event_id, "binding when loading past events");
+  matrix_bind_int (stmt, 4, CM_M_ROOM_MESSAGE, "binding when loading past events");
+  matrix_bind_int (stmt, 5, CM_M_ROOM_ENCRYPTED, "binding when loading past events");
+  matrix_bind_int (stmt, 6, max_count, "binding when loading past events");
 
   while (sqlite3_step (stmt) == SQLITE_ROW)
     {
@@ -242,6 +251,11 @@ db_get_past_room_events (CmDb   *self,
 
       if (!cm_event)
         continue;
+
+      /* 4th column in above query: redaction_id, only set when the
+       * LEFT JOIN matched an event of type redaction */
+      if (sqlite3_column_type (stmt, 3) != SQLITE_NULL)
+        cm_event_set_redacted (CM_EVENT (cm_event));
 
       if (!events)
         events = g_ptr_array_new_full (32, g_object_unref);

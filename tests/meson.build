@@ -22,6 +22,7 @@ test_items = [
   'enc-chat',
   'cm-db',
   'cm-enc',
+  'event',
   'pusher',
   'room',
   'room-member',
